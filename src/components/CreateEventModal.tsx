@@ -69,8 +69,8 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         format: formData.format,
         startDate: startDateTime,
         endDate: endDateTime,
-        maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : null,
-        entryFee: formData.entryFee ? parseFloat(formData.entryFee) : null,
+        maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
+        entryFee: formData.entryFee ? parseFloat(formData.entryFee) : undefined,
         prizePool: formData.prizePool || '',
         status: 'upcoming' as const,
         location: {
