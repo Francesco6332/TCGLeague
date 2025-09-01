@@ -65,34 +65,52 @@
   
   /* Accessible Card Styles */
   .card {
-    @apply bg-white/12 backdrop-blur-lg rounded-xl border-2 border-white/25;
-    @apply shadow-xl transition-all duration-300;
-    @apply hover:border-white/40 hover:bg-white/18;
+    background: rgba(255, 255, 255, 0.12);
+    @apply backdrop-blur-lg rounded-xl border-2 shadow-xl transition-all duration-300;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .card:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.4);
   }
   
   /* Accessible Input Styles */
   .input-field {
-    @apply bg-white/12 border-2 border-white/25 rounded-lg;
-    @apply text-white placeholder-white/70 transition-all duration-200;
-    @apply focus:border-blue-400 focus:ring-4 focus:ring-blue-400/30 focus:outline-none;
-    @apply hover:border-white/40;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    @apply rounded-lg text-white transition-all duration-200 focus:outline-none;
     padding: 12px 16px;
     font-size: 16px; /* Prevents iOS zoom */
     min-height: 44px;
   }
   
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .input-field:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+  
+  .input-field:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.3);
+    background: rgba(255, 255, 255, 0.18);
+  }
+  
   .input-field:invalid {
-    @apply border-red-400;
+    border-color: #f87171;
   }
   
   .input-field:invalid:focus {
-    @apply ring-red-400/30;
+    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.3);
   }
   
   /* Accessible Navigation */
   .nav-link {
-    @apply text-white/90 hover:text-white transition-colors duration-200;
-    @apply hover:bg-white/15 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+    color: rgba(255, 255, 255, 0.9);
+    @apply transition-colors duration-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
     padding: 12px 16px;
     min-height: 44px;
     display: flex;
@@ -101,8 +119,14 @@
     font-weight: 500;
   }
   
+  .nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
   .nav-link.active {
-    @apply text-white bg-blue-600/30 border-l-4 border-blue-400;
+    @apply text-white border-l-4 border-blue-400;
+    background: rgba(37, 99, 235, 0.3);
   }
   
   /* Skip Link for Screen Readers */
@@ -154,7 +178,9 @@
   }
   
   .glass-effect {
-    @apply bg-white/8 backdrop-blur-md border border-white/20;
+    background: rgba(255, 255, 255, 0.08);
+    @apply backdrop-blur-md border;
+    border-color: rgba(255, 255, 255, 0.2);
   }
   
   /* High Contrast Mode Support */
@@ -169,11 +195,13 @@
     }
     
     .card {
-      @apply border-white/60 bg-black/80;
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(0, 0, 0, 0.8);
     }
     
     .input-field {
-      @apply border-white bg-black/80;
+      @apply border-white;
+      background: rgba(0, 0, 0, 0.8);
     }
     
     .gradient-text {
