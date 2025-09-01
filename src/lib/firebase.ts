@@ -32,4 +32,25 @@ if (isDevelopmentMode && typeof window !== 'undefined') {
   console.warn('🔗  See env.example for required environment variables');
 }
 
+// Production monitoring
+if (!isDevelopmentMode && typeof window !== 'undefined') {
+  // Enable performance monitoring in production
+  import('firebase/performance').then(({ getPerformance }) => {
+    getPerformance(app);
+  }).catch(() => {
+    // Performance monitoring not available
+  });
+  
+  // Enable analytics in production
+  import('firebase/analytics').then(({ getAnalytics, isSupported }) => {
+    isSupported().then((supported) => {
+      if (supported) {
+        getAnalytics(app);
+      }
+    });
+  }).catch(() => {
+    // Analytics not available
+  });
+}
+
 export default app;
