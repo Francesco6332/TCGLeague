@@ -4,10 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    
+    <!-- SEO and Accessibility Meta Tags -->
+    <title>TCG League - One Piece Card Game Tournament Management</title>
+    <meta name="description" content="Create and manage One Piece Trading Card Game tournaments. Join leagues, build decks, and compete with players worldwide." />
+    <meta name="keywords" content="One Piece, TCG, Trading Card Game, Tournament, League, Deck Builder, Card Game" />
+    <meta name="author" content="TCG League" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="TCG League - One Piece Card Game Tournaments" />
+    <meta property="og:description" content="Create and manage One Piece Trading Card Game tournaments. Join leagues, build decks, and compete with players worldwide." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tcgleague.vercel.app" />
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TCG League - One Piece Card Game Tournaments" />
+    <meta name="twitter:description" content="Create and manage One Piece Trading Card Game tournaments. Join leagues, build decks, and compete with players worldwide." />
+    
+    <!-- Accessibility and Theme -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="color-scheme" content="dark" />
+    
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Skip to main content for screen readers -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded">
+      Skip to main content
+    </a>
+    
+    <div id="root" role="application" aria-label="TCG League Application"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

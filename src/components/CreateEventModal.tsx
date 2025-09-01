@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { X, Calendar, MapPin, Users, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, DollarSign } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { League } from '../types';
+import { AccessibleModal } from './ui/AccessibleModal';
+import { AccessibleForm, FormField, FormButton, FormError } from './ui/AccessibleForm';
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -122,65 +123,48 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Event"
+      size="lg"
+    >
+      <FormError error={error} id="create-event-error" />
+
+      <AccessibleForm 
+        onSubmit={handleSubmit}
+        aria-labelledby="modal-title"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold gradient-text">Create New Event</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        {/* Basic Information */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4">Event Information</h3>
+          <div className="space-y-4">
+            <FormField
+              id="name"
+              label="Event Name"
+              required
+              value={formData.name}
+              onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
+              placeholder="Enter event name"
+              error={error && !formData.name ? 'Event name is required' : ''}
+              aria-describedby={error ? "create-event-error" : undefined}
+            />
 
-        {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Event Information</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Event Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="input-field w-full"
-                  placeholder="Enter event name"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="input-field w-full resize-none"
-                  rows={3}
-                  placeholder="Describe your event"
-                />
-              </div>
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-white/80 mb-2">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="input-field w-full resize-none"
+                rows={3}
+                placeholder="Describe your event"
+              />
+            </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -373,32 +357,28 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex space-x-4 pt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary flex-1 flex items-center justify-center space-x-2"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <Calendar className="h-4 w-4" />
-                  <span>Create Event</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
+        {/* Submit Button */}
+        <div className="flex space-x-4 pt-6">
+          <FormButton
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            className="flex-1"
+          >
+            Cancel
+          </FormButton>
+          <FormButton
+            type="submit"
+            variant="primary"
+            loading={loading}
+            loadingText="Creating Event..."
+            className="flex-1"
+          >
+            <Calendar className="h-4 w-4" aria-hidden="true" />
+            <span>Create Event</span>
+          </FormButton>
+        </div>
+      </AccessibleForm>
+    </AccessibleModal>
   );
 }

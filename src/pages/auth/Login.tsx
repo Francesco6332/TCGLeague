@@ -64,7 +64,7 @@ export function Login() {
           >
             <Trophy className="h-12 w-12" />
           </motion.div>
-          <h2 className="mt-6 text-3xl font-bold gradient-text">
+          <h2 id="login-title" className="mt-6 text-3xl font-bold gradient-text">
             Welcome Back
           </h2>
           <p className="mt-2 text-sm text-white/70">
@@ -78,6 +78,8 @@ export function Login() {
           transition={{ delay: 0.3 }}
           className="mt-8 space-y-6"
           onSubmit={handleSubmit}
+          aria-labelledby="login-title"
+          noValidate
         >
           <div className="card p-8">
             {error && (
@@ -85,6 +87,9 @@ export function Login() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6"
+                role="alert"
+                aria-live="polite"
+                id="login-error"
               >
                 {error}
               </motion.div>
@@ -93,7 +98,7 @@ export function Login() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
-                  Email Address
+                  Email Address *
                 </label>
                 <input
                   id="email"
@@ -105,12 +110,14 @@ export function Login() {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  aria-describedby={error ? "login-error" : undefined}
+                  aria-invalid={error ? "true" : "false"}
                 />
               </div>
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
-                  Password
+                  Password *
                 </label>
                 <div className="relative">
                   <input
@@ -123,16 +130,19 @@ export function Login() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    aria-describedby={error ? "login-error" : undefined}
+                    aria-invalid={error ? "true" : "false"}
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-white/60" />
+                      <EyeOff className="h-4 w-4 text-white/60" aria-hidden="true" />
                     ) : (
-                      <Eye className="h-4 w-4 text-white/60" />
+                      <Eye className="h-4 w-4 text-white/60" aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -144,12 +154,17 @@ export function Login() {
                 type="submit"
                 disabled={loading}
                 className="btn-primary w-full flex items-center justify-center space-x-2 py-3"
+                aria-describedby={loading ? "login-loading" : undefined}
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <>
+                    <div className="loading-spinner h-4 w-4" aria-hidden="true"></div>
+                    <span id="login-loading" className="sr-only">Signing in, please wait</span>
+                    <span>Signing in...</span>
+                  </>
                 ) : (
                   <>
-                    <LogIn className="h-4 w-4" />
+                    <LogIn className="h-4 w-4" aria-hidden="true" />
                     <span>Sign In</span>
                   </>
                 )}

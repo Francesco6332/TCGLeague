@@ -9,7 +9,12 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen" style={{background: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)'}}>
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main 
+        id="main-content"
+        className="container mx-auto px-4 py-8" 
+        role="main"
+        aria-label="Main content"
+      >
         {children}
       </main>
     </div>
