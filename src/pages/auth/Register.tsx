@@ -40,7 +40,15 @@ export function Register() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name.startsWith('address.')) {
+    // Handle form data fields (including userType)
+    if (['email', 'username', 'password', 'confirmPassword', 'bandaiMembershipId', 'userType'].includes(name)) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+    // Handle address fields
+    else if (name.startsWith('address.')) {
       const addressField = name.split('.')[1];
       setStoreInfo(prev => ({
         ...prev,
@@ -49,13 +57,10 @@ export function Register() {
           [addressField]: value,
         },
       }));
-    } else if (name in storeInfo) {
+    } 
+    // Handle other store info fields
+    else if (['storeName', 'phone', 'website', 'description'].includes(name)) {
       setStoreInfo(prev => ({
-        ...prev,
-        [name]: value,
-      }));
-    } else {
-      setFormData(prev => ({
         ...prev,
         [name]: value,
       }));
@@ -88,6 +93,7 @@ export function Register() {
     try {
       setError('');
       setLoading(true);
+      
       
       await register(
         formData.email,
