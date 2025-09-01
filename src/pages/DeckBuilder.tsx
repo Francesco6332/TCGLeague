@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import { 
   Plus, 
@@ -26,66 +28,34 @@ export function DeckBuilder() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching user's decks
+    // Fetch user's decks from Firestore
     const fetchDecks = async () => {
+      if (!userProfile) return;
+      
       setLoading(true);
       
-      // Mock deck data
-      const mockDecks: Deck[] = [
-        {
-          id: '1',
-          name: 'Red Straw Hat Pirates',
-          playerId: userProfile?.id || '',
-          format: 'Standard',
-          leader: {
-            id: 'st01-001',
-            name: 'Monkey.D.Luffy',
-            cost: 0,
-            power: 5000,
-            color: ['Red'],
-            type: ['Leader'],
-            rarity: 'L',
-            set: 'ST-01',
-            cardNumber: 'ST01-001',
-            effect: '[DON!! x1] [When Attacking] Give up to 1 of your Leader or Character cards +1000 power during this turn.',
-          },
-          mainDeck: [],
-          don: [],
-          totalCards: 50,
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-02-01'),
-          isPublic: false,
-        },
-        {
-          id: '2',
-          name: 'Blue Heart Pirates',
-          playerId: userProfile?.id || '',
-          format: 'Standard',
-          leader: {
-            id: 'st03-001',
-            name: 'Trafalgar Law',
-            cost: 0,
-            power: 5000,
-            color: ['Blue'],
-            type: ['Leader'],
-            rarity: 'L',
-            set: 'ST-03',
-            cardNumber: 'ST03-001',
-            effect: '[Activate: Main] [Once Per Turn] ➀ (You may rest the specified number of DON!! cards in your cost area.) : Look at 3 cards from the top of your deck; reveal up to 1 {Heart Pirates} type card other than [Trafalgar Law] and add it to your hand. Then, place the rest at the bottom of your deck in any order.',
-          },
-          mainDeck: [],
-          don: [],
-          totalCards: 50,
-          createdAt: new Date('2024-01-20'),
-          updatedAt: new Date('2024-02-05'),
-          isPublic: true,
-        },
-      ];
-
-      setTimeout(() => {
-        setDecks(mockDecks);
+      try {
+        const decksQuery = query(
+          collection(db, 'decks'),
+          where('playerId', '==', userProfile.id),
+          orderBy('updatedAt', 'desc')
+        );
+        
+        const decksSnapshot = await getDocs(decksQuery);
+        const userDecks = decksSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        })) as Deck[];
+        
+        setDecks(userDecks);
+      } catch (error) {
+        console.error('Error fetching decks:', error);
+        setDecks([]);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchDecks();

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -14,6 +16,7 @@ import {
   Edit
 } from 'lucide-react';
 import type { League } from '../types';
+import { CreateEventModal } from '../components/CreateEventModal';
 
 export function Events() {
   const { userProfile } = useAuth();
@@ -21,71 +24,58 @@ export function Events() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'completed'>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
-    // Simulate fetching user's events
+    // Fetch user's events from Firestore
     const fetchEvents = async () => {
+      if (!userProfile) return;
+      
       setLoading(true);
       
-      // Mock data for demonstration
-      const mockEvents: League[] = [
-        {
-          id: '1',
-          name: 'One Piece Championship Series',
-          description: 'Official tournament series with exclusive prizes',
-          storeId: 'store1',
-          storeName: 'Dragon Ball TCG Center',
-          format: 'Championship',
-          startDate: new Date('2024-02-15'),
-          endDate: new Date('2024-02-15'),
-          maxParticipants: 32,
-          entryFee: 15,
-          prizePool: 'Booster packs and exclusive playmat',
-          participants: [],
-          rounds: [],
-          standings: [],
-          status: 'upcoming',
-          location: {
-            address: '123 Main St',
-            city: 'Tokyo',
-            state: 'Tokyo',
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          name: 'Weekly One Piece League',
-          description: 'Casual weekly tournaments for all skill levels',
-          storeId: 'store2',
-          storeName: 'Anime Cards Paradise',
-          format: 'Standard',
-          startDate: new Date('2024-01-20'),
-          endDate: new Date('2024-01-20'),
-          maxParticipants: 16,
-          entryFee: 5,
-          participants: [],
-          rounds: [],
-          standings: [],
-          status: 'completed',
-          location: {
-            address: '456 Anime Ave',
-            city: 'Osaka',
-            state: 'Osaka',
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-
-      setTimeout(() => {
-        setEvents(mockEvents);
+      try {
+        let eventsQuery;
+        
+        if (userProfile.userType === 'store') {
+          // For stores: fetch events they created
+          eventsQuery = query(
+            collection(db, 'events'),
+            where('storeId', '==', userProfile.id),
+            orderBy('createdAt', 'desc')
+          );
+        } else {
+          // For players: fetch events they're participating in
+          eventsQuery = query(
+            collection(db, 'events'),
+            where('participants', 'array-contains', {
+              playerId: userProfile.id,
+              playerName: userProfile.username
+            }),
+            orderBy('startDate', 'desc')
+          );
+        }
+        
+        const eventsSnapshot = await getDocs(eventsQuery);
+        const userEvents = eventsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          startDate: doc.data().startDate?.toDate() || new Date(),
+          endDate: doc.data().endDate?.toDate() || new Date(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        })) as League[];
+        
+        setEvents(userEvents);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        setEvents([]);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchEvents();
-  }, []);
+  }, [userProfile]);
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,6 +103,10 @@ export function Events() {
     }).format(date);
   };
 
+  const handleEventCreated = (newEvent: League) => {
+    setEvents(prev => [newEvent, ...prev]);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -138,6 +132,7 @@ export function Events() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
+            onClick={() => setShowCreateModal(true)}
             className="btn-primary flex items-center space-x-2 mt-4 md:mt-0"
           >
             <Plus className="h-4 w-4" />
@@ -291,6 +286,13 @@ export function Events() {
           </div>
         )}
       </motion.div>
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onEventCreated={handleEventCreated}
+      />
     </div>
   );
 }

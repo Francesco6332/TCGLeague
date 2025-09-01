@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import { 
   Calendar, 
@@ -20,89 +22,53 @@ export function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching nearby events and news
+    // Fetch real events and news from Firestore
     const fetchData = async () => {
       setLoading(true);
       
-      // Mock data for demonstration
-      const mockEvents: League[] = [
-        {
-          id: '1',
-          name: 'One Piece Championship Series',
-          description: 'Official tournament series with exclusive prizes',
-          storeId: 'store1',
-          storeName: 'Dragon Ball TCG Center',
-          format: 'Championship',
-          startDate: new Date('2024-02-15'),
-          endDate: new Date('2024-02-15'),
-          maxParticipants: 32,
-          entryFee: 15,
-          prizePool: 'Booster packs and exclusive playmat',
-          participants: [],
-          rounds: [],
-          standings: [],
-          status: 'upcoming',
-          location: {
-            address: '123 Main St',
-            city: 'Tokyo',
-            state: 'Tokyo',
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          name: 'Weekly One Piece League',
-          description: 'Casual weekly tournaments for all skill levels',
-          storeId: 'store2',
-          storeName: 'Anime Cards Paradise',
-          format: 'Standard',
-          startDate: new Date('2024-02-10'),
-          endDate: new Date('2024-02-10'),
-          maxParticipants: 16,
-          entryFee: 5,
-          participants: [],
-          rounds: [],
-          standings: [],
-          status: 'ongoing',
-          location: {
-            address: '456 Anime Ave',
-            city: 'Osaka',
-            state: 'Osaka',
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
+      try {
+        // Fetch events
+        const eventsQuery = query(
+          collection(db, 'events'),
+          where('status', 'in', ['upcoming', 'ongoing']),
+          orderBy('startDate', 'asc'),
+          limit(10)
+        );
+        const eventsSnapshot = await getDocs(eventsQuery);
+        const events = eventsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          startDate: doc.data().startDate?.toDate() || new Date(),
+          endDate: doc.data().endDate?.toDate() || new Date(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        })) as League[];
+        
+        setNearbyEvents(events);
 
-      const mockNews: News[] = [
-        {
-          id: '1',
-          title: 'New OP-07 Set "500 Years in the Future" Announced!',
-          content: 'Bandai announces the latest One Piece Card Game expansion featuring time-skip characters and new mechanics.',
-          imageUrl: undefined,
-          author: 'Bandai Official',
-          publishedAt: new Date('2024-02-01'),
-          tags: ['announcement', 'new-set'],
-          isOfficial: true,
-        },
-        {
-          id: '2',
-          title: 'World Championship 2024 Registration Opens',
-          content: 'Registration for the One Piece TCG World Championship is now open. Compete for the ultimate prize!',
-          imageUrl: undefined,
-          author: 'Tournament Officials',
-          publishedAt: new Date('2024-01-28'),
-          tags: ['tournament', 'championship'],
-          isOfficial: true,
-        },
-      ];
-
-      setTimeout(() => {
-        setNearbyEvents(mockEvents);
-        setNews(mockNews);
+        // Fetch news
+        const newsQuery = query(
+          collection(db, 'news'),
+          where('isVisible', '==', true),
+          orderBy('publishedAt', 'desc'),
+          limit(5)
+        );
+        const newsSnapshot = await getDocs(newsQuery);
+        const newsData = newsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          publishedAt: doc.data().publishedAt?.toDate() || new Date(),
+        })) as News[];
+        
+        setNews(newsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Set empty arrays on error
+        setNearbyEvents([]);
+        setNews([]);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchData();

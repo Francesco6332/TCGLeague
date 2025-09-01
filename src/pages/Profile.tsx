@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -54,9 +56,28 @@ export function Profile() {
   };
 
   const handleSave = async () => {
-    // TODO: Implement profile update logic
-    console.log('Saving profile:', formData);
-    setIsEditing(false);
+    if (!userProfile) return;
+    
+    try {
+      const updateData = {
+        username: formData.username,
+        email: formData.email,
+        updatedAt: new Date(),
+        ...(userProfile.userType === 'store' && {
+          storeName: formData.storeName,
+          phone: formData.phone,
+          website: formData.website,
+          description: formData.description,
+          address: formData.address,
+        }),
+      };
+
+      await updateDoc(doc(db, 'users', userProfile.id), updateData);
+      console.log('Profile updated successfully');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   const handleCancel = () => {

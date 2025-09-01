@@ -54,12 +54,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUserProfile({
               id: user.uid,
               ...userData,
-              createdAt: userData.createdAt?.toDate(),
-              updatedAt: userData.updatedAt?.toDate(),
+              createdAt: userData.createdAt?.toDate() || new Date(),
+              updatedAt: userData.updatedAt?.toDate() || new Date(),
             } as User);
+          } else {
+            // If user document doesn't exist, create a basic profile
+            const basicProfile = {
+              id: user.uid,
+              email: user.email || '',
+              username: user.displayName || user.email?.split('@')[0] || 'User',
+              userType: 'player' as const,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            setUserProfile(basicProfile);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
+          // Set basic profile on error
+          setUserProfile({
+            id: user.uid,
+            email: user.email || '',
+            username: user.displayName || user.email?.split('@')[0] || 'User',
+            userType: 'player' as const,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
         }
       } else {
         setUserProfile(null);
