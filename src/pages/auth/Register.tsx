@@ -100,8 +100,18 @@ export function Register() {
       
       navigate('/');
     } catch (error: any) {
-      setError('Failed to create account. Please try again.');
       console.error('Registration error:', error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/email-already-in-use') {
+        setError('This email is already registered. Please use a different email or try logging in.');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Password is too weak. Please use at least 6 characters.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else {
+        setError('Failed to create account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

@@ -28,8 +28,20 @@ export function Login() {
       await login(email, password);
       navigate('/');
     } catch (error: any) {
-      setError('Failed to log in. Please check your credentials.');
       console.error('Login error:', error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/user-not-found') {
+        setError('No account found with this email. Please register first.');
+      } else if (error.code === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (error.code === 'auth/user-disabled') {
+        setError('This account has been disabled. Please contact support.');
+      } else {
+        setError('Failed to log in. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
