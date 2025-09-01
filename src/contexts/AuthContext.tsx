@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       username,
       userType,
-      bandaiMembershipId,
+      ...(bandaiMembershipId && { bandaiMembershipId }), // Only include if not undefined
       createdAt: new Date(),
       updatedAt: new Date(),
     };
