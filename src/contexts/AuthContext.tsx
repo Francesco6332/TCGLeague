@@ -99,6 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     bandaiMembershipId?: string,
     storeInfo?: Partial<Store>
   ) => {
+    // Validate store info if registering as store
+    if (userType === 'store' && (!storeInfo || !storeInfo.storeName)) {
+      throw new Error('Store name is required for store registration');
+    }
+
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     
     const baseUserData = {
@@ -115,12 +120,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (userType === 'player') {
       userData = {
         ...baseUserData,
+        userType: 'player', // Explicitly set userType
         participatingEvents: [],
         decks: [],
       } as Partial<Player>;
-    } else {
+    } else if (userType === 'store') {
       userData = {
         ...baseUserData,
+        userType: 'store', // Explicitly set userType
         storeName: storeInfo?.storeName || '',
         address: storeInfo?.address || {
           street: '',
@@ -134,8 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: storeInfo?.description,
         organizedEvents: [],
       } as Partial<Store>;
+    } else {
+      throw new Error('Invalid user type');
     }
 
+    console.log('Saving user data:', userData); // Debug log
     await setDoc(doc(db, 'users', user.uid), userData);
   };
 
