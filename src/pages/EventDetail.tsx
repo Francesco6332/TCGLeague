@@ -14,7 +14,6 @@ import {
   Edit,
   UserPlus,
   Award,
-  Target,
   Star
 } from 'lucide-react';
 import type { League } from '../types';
@@ -25,7 +24,7 @@ export function EventDetail() {
   const [event, setEvent] = useState<League | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'participants' | 'rounds'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'participants'>('overview');
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -276,7 +275,6 @@ export function EventDetail() {
             { id: 'overview', label: 'Overview', icon: Trophy },
             { id: 'standings', label: 'Standings', icon: Award },
             { id: 'participants', label: 'Participants', icon: Users },
-            { id: 'rounds', label: 'Rounds', icon: Target },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -335,13 +333,25 @@ export function EventDetail() {
 
         {activeTab === 'standings' && (
           <div className="card p-6">
-            <h3 className="text-xl font-semibold text-white mb-6">Current Standings</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Current Standings</h3>
+              {userProfile?.userType === 'store' && canEdit && (
+                <div className="text-sm text-white/60">
+                  💡 Update standings through your store dashboard
+                </div>
+              )}
+            </div>
             
             {event.standings.length === 0 ? (
               <div className="text-center py-12">
                 <Award className="h-12 w-12 text-white/40 mx-auto mb-4" />
                 <p className="text-white/60">No standings available yet</p>
-                <p className="text-white/40 text-sm">Standings will appear once matches begin</p>
+                <p className="text-white/40 text-sm">
+                  {userProfile?.userType === 'store' && canEdit 
+                    ? 'Use your store dashboard to input match results and update standings'
+                    : 'Standings will appear once the tournament begins'
+                  }
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -416,22 +426,7 @@ export function EventDetail() {
           </div>
         )}
 
-        {activeTab === 'rounds' && (
-          <div className="card p-6">
-            <h3 className="text-xl font-semibold text-white mb-6">Tournament Rounds</h3>
-            
-            <div className="text-center py-12">
-              <Target className="h-12 w-12 text-white/40 mx-auto mb-4" />
-              <p className="text-white/60">No rounds available yet</p>
-              <p className="text-white/40 text-sm">
-                {event.status === 'upcoming' 
-                  ? 'Rounds will be created when the tournament begins'
-                  : 'Round information will appear here'
-                }
-              </p>
-            </div>
-          </div>
-        )}
+
       </motion.div>
     </div>
   );
