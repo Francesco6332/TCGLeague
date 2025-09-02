@@ -38,6 +38,9 @@ create-placeholder.js
 # Card images folder
 card-images/
 
+# Local card images (uncomment if you don't want to commit large image files)
+public/images/cards/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

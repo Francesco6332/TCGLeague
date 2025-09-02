@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ImageService } from '../../services/imageService';
 
 interface CardImageProps {
@@ -19,9 +19,26 @@ export function CardImage({
   const [imageUrl, setImageUrl] = useState(ImageService.getCardImageUrl(cardNumber));
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [triedFormats, setTriedFormats] = useState<string[]>([]);
 
   const handleError = () => {
     if (!hasError && showPlaceholder) {
+      // Try alternative format if we haven't tried it yet
+      if (!triedFormats.includes('jpg') && imageUrl.endsWith('.png')) {
+        const jpgUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'jpg');
+        setImageUrl(jpgUrl);
+        setTriedFormats(prev => [...prev, 'jpg']);
+        return;
+      }
+      
+      if (!triedFormats.includes('png') && imageUrl.endsWith('.jpg')) {
+        const pngUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'png');
+        setImageUrl(pngUrl);
+        setTriedFormats(prev => [...prev, 'png']);
+        return;
+      }
+      
+      // If both formats failed, show placeholder
       setHasError(true);
       setImageUrl(ImageService.getPlaceholderUrl());
     }
@@ -31,6 +48,14 @@ export function CardImage({
   const handleLoad = () => {
     setIsLoading(false);
   };
+
+  // Reset state when cardNumber changes
+  useEffect(() => {
+    setImageUrl(ImageService.getCardImageUrl(cardNumber));
+    setHasError(false);
+    setIsLoading(true);
+    setTriedFormats([]);
+  }, [cardNumber]);
 
   // Size classes
   const sizeClasses = {
