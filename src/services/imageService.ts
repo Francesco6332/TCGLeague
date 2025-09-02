@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GITHUB_IMAGE_URLS } from '../../github-image-mapping.js';
+import { GITHUB_IMAGE_URLS } from 'github-image-mapping.js';
 
 /**
  * Service for managing One Piece TCG card images
