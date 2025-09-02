@@ -7,6 +7,40 @@ import type { League } from '../types';
 import { AccessibleModal } from './ui/AccessibleModal';
 import { AccessibleForm, FormField, FormButton, FormError } from './ui/AccessibleForm';
 
+// Geocoding function to get coordinates from address
+async function getCoordinatesFromAddress(address: string, city: string, state: string): Promise<{lat: number, lng: number} | undefined> {
+  if (!address && !city) return undefined;
+  
+  const query = [address, city, state].filter(Boolean).join(', ');
+  
+  try {
+    // Using OpenStreetMap Nominatim API (free, no API key required)
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'TCG-League-App/1.0',
+        },
+      }
+    );
+    
+    if (!response.ok) throw new Error('Geocoding failed');
+    
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+      };
+    }
+  } catch (error) {
+    console.warn('Geocoding failed, event will be created without coordinates:', error);
+  }
+  
+  return undefined;
+}
+
 interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -77,6 +111,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
           address: formData.address,
           city: formData.city,
           state: formData.state,
+          coordinates: await getCoordinatesFromAddress(formData.address, formData.city, formData.state),
         },
         participants: [],
         rounds: [],

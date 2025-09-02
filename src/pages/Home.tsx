@@ -11,15 +11,23 @@ import {
   Star,
   ArrowRight,
   Newspaper,
-  ExternalLink
+  ExternalLink,
+  Navigation,
+  AlertCircle
 } from 'lucide-react';
 import type { League, News } from '../types';
+import { useGeolocation, calculateDistance } from '../hooks/useGeolocation';
+
+interface LeagueWithDistance extends League {
+  distance?: number | null;
+}
 
 export function Home() {
   const { userProfile } = useAuth();
-  const [nearbyEvents, setNearbyEvents] = useState<League[]>([]);
+  const [nearbyEvents, setNearbyEvents] = useState<LeagueWithDistance[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
+  const { latitude, longitude, error: locationError, loading: locationLoading } = useGeolocation();
 
   useEffect(() => {
     // Fetch real events and news from Firestore
@@ -35,7 +43,7 @@ export function Home() {
           limit(10)
         );
         const eventsSnapshot = await getDocs(eventsQuery);
-        const events = eventsSnapshot.docs.map(doc => ({
+        let events = eventsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           startDate: doc.data().startDate?.toDate() || new Date(),
@@ -43,6 +51,32 @@ export function Home() {
           createdAt: doc.data().createdAt?.toDate() || new Date(),
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         })) as League[];
+
+        // Sort by distance if user location is available
+        if (latitude && longitude) {
+          events = events
+            .map(event => ({
+              ...event,
+              distance: event.location.coordinates
+                ? calculateDistance(
+                    latitude,
+                    longitude,
+                    event.location.coordinates.lat,
+                    event.location.coordinates.lng
+                  )
+                : null,
+            }))
+            .sort((a, b) => {
+              // Events with coordinates come first, sorted by distance
+              if (a.distance !== null && b.distance !== null) {
+                return a.distance - b.distance;
+              }
+              if (a.distance !== null && b.distance === null) return -1;
+              if (a.distance === null && b.distance !== null) return 1;
+              // If neither has coordinates, sort by date
+              return a.startDate.getTime() - b.startDate.getTime();
+            });
+        }
         
         setNearbyEvents(events);
 
@@ -128,6 +162,15 @@ export function Home() {
               <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
                 <MapPin className="h-6 w-6 text-blue-400" />
                 <span>Nearby Events</span>
+                {locationLoading && (
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                )}
+                {locationError && (
+                  <AlertCircle className="h-4 w-4 text-yellow-400" title={locationError} />
+                )}
+                {latitude && longitude && !locationLoading && (
+                  <Navigation className="h-4 w-4 text-green-400" title="Location enabled" />
+                )}
               </h2>
               <button className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1">
                 <span>View All</span>
@@ -172,6 +215,11 @@ export function Home() {
                           <div className="flex items-center space-x-2 text-white/60">
                             <MapPin className="h-4 w-4" />
                             <span>{event.location.city}</span>
+                            {event.distance && (
+                              <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
+                                {event.distance} km
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center space-x-2 text-white/60">
                             <Users className="h-4 w-4" />
