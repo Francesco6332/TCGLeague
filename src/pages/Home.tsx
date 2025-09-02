@@ -35,7 +35,6 @@ export function Home() {
       setLoading(true);
       
       try {
-        console.log('🔍 Fetching events from Firestore...'); // Debug
         
         // Simplified query first - remove orderBy to avoid index issues
         const eventsQuery = query(
@@ -45,10 +44,8 @@ export function Home() {
         );
         const eventsSnapshot = await getDocs(eventsQuery);
         
-        console.log('📊 Found events:', eventsSnapshot.size); // Debug
         let events = eventsSnapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('📅 Event data:', { id: doc.id, name: data.name, status: data.status }); // Debug
           return {
             id: doc.id,
             ...data,
@@ -59,11 +56,9 @@ export function Home() {
           };
         }) as League[];
 
-        console.log('✅ Processed events:', events.length); // Debug
 
         // Sort by distance if user location is available
         if (latitude && longitude) {
-          console.log('🗺️ User location:', { latitude, longitude }); // Debug
           events = events
             .map(event => ({
               ...event,
@@ -90,27 +85,27 @@ export function Home() {
         
         setNearbyEvents(events);
 
-        // Fetch news
-        const newsQuery = query(
-          collection(db, 'news'),
-          where('isVisible', '==', true),
-          orderBy('publishedAt', 'desc'),
-          limit(5)
-        );
-        const newsSnapshot = await getDocs(newsQuery);
-        const newsData = newsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          publishedAt: doc.data().publishedAt?.toDate() || new Date(),
-        })) as News[];
-        
-        setNews(newsData);
+        // Fetch news - simplified query to avoid index issues
+        try {
+          const newsQuery = query(
+            collection(db, 'news'),
+            limit(5)
+          );
+          const newsSnapshot = await getDocs(newsQuery);
+          const newsData = newsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            publishedAt: doc.data().publishedAt?.toDate() || new Date(),
+          })) as News[];
+          
+          setNews(newsData);
+        } catch (newsError) {
+          setNews([]);
+        }
       } catch (error) {
-        console.error('❌ Error fetching data:', error);
         
         // Check if it's a Firestore index error
         if (error instanceof Error && error.message.includes('index')) {
-          console.error('🔗 Firestore index missing! Create the index using the link in the console.');
         }
         
         // Set empty arrays on error
