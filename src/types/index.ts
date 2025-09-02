@@ -48,6 +48,8 @@ export interface League {
   participants: Participant[];
   rounds: Round[];
   standings: Standing[];
+  stages: Stage[];
+  currentStage: number;
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   location: {
     address: string;
@@ -69,6 +71,14 @@ export interface Participant {
   deckName?: string;
   registeredAt: Date;
   dropped?: boolean;
+}
+
+export interface Stage {
+  stageNumber: number;
+  name: string;
+  date: Date;
+  isCompleted: boolean;
+  standings: Standing[];
 }
 
 export interface Round {

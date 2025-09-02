@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import { 
@@ -30,6 +30,9 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
   const [showAddStandings, setShowAddStandings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [finalPlacements, setFinalPlacements] = useState<FinalPlacement[]>([]);
+  const [selectedStage, setSelectedStage] = useState<number>(
+    event.stages?.length > 0 ? Math.max(0, event.currentStage) : 0
+  );
 
   const calculatePointsFromRank = (rank: number): number => {
     // Points system for top 10 finishers
@@ -49,29 +52,140 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
     return pointsSystem[rank] || 0; // 0 points for 11th place and below
   };
 
-  const calculateStandings = (placements: FinalPlacement[]): Standing[] => {
-    const standings: Standing[] = placements.map(placement => {
-      const totalMatches = placement.wins + placement.losses;
-      const winRate = totalMatches > 0 ? placement.wins / totalMatches : 0;
-      
+  const calculateCumulativeStandings = (stageResults: FinalPlacement[], stageNumber: number): Standing[] => {
+    // Get all previous stage results
+    const allResults = new Map<string, { points: number, totalWins: number, totalLosses: number, stagesPlayed: number }>();
+    
+    // Initialize all participants
+    event.participants.forEach(participant => {
+      allResults.set(participant.playerId, {
+        points: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        stagesPlayed: 0
+      });
+    });
+
+    // Add points from all completed stages (including current)
+    for (let i = 0; i < stageNumber; i++) {
+      const stage = event.stages[i];
+      if (stage && stage.standings) {
+        stage.standings.forEach(standing => {
+          const current = allResults.get(standing.playerId);
+          if (current) {
+            current.points += standing.points;
+            current.totalWins += standing.wins;
+            current.totalLosses += standing.losses;
+            current.stagesPlayed++;
+          }
+        });
+      }
+    }
+
+    // Add current stage results
+    stageResults.forEach(result => {
+      const current = allResults.get(result.playerId);
+      if (current) {
+        current.points += result.points;
+        current.totalWins += result.wins;
+        current.totalLosses += result.losses;
+        current.stagesPlayed++;
+      }
+    });
+
+    // Convert to standings array
+    const standings: Standing[] = Array.from(allResults.entries()).map(([playerId, data]) => {
+      const participant = event.participants.find(p => p.playerId === playerId);
       return {
-        playerId: placement.playerId,
-        playerName: placement.playerName,
-        points: placement.points,
-        wins: placement.wins,
-        losses: placement.losses,
-        draws: 0, // No more draws in the system
-        matchesPlayed: totalMatches,
-        opponentWinPercentage: 0, // Not calculated for final standings
-        gameWinPercentage: winRate,
-        rank: placement.finalRank,
+        playerId,
+        playerName: participant?.playerName || 'Unknown',
+        points: data.points,
+        wins: data.totalWins,
+        losses: data.totalLosses,
+        draws: 0,
+        matchesPlayed: data.stagesPlayed,
+        opponentWinPercentage: 0,
+        gameWinPercentage: data.totalWins + data.totalLosses > 0 ? data.totalWins / (data.totalWins + data.totalLosses) : 0,
+        rank: 0, // Will be calculated after sorting
       };
     });
 
-    // Sort by rank (ascending)
-    standings.sort((a, b) => a.rank - b.rank);
+    // Sort by points (descending), then by wins (descending)
+    standings.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return b.wins - a.wins;
+    });
 
-    return standings;
+    // Assign ranks
+    standings.forEach((standing, index) => {
+      standing.rank = index + 1;
+    });
+
+    return standings.filter(s => s.points > 0 || s.matchesPlayed > 0); // Only show participants with results
+  };
+
+  const updateParticipantStats = async (participants: any[]) => {
+    // Update stats for all participants in the background
+    try {
+      const updatePromises = participants.map(async (participant) => {
+        // Get all events this player participated in
+        const eventsQuery = query(collection(db, 'events'));
+        const eventsSnapshot = await getDocs(eventsQuery);
+        
+        let totalWins = 0;
+        let totalLosses = 0;
+        let eventsJoined = 0;
+        
+        eventsSnapshot.docs.forEach(doc => {
+          const event = doc.data();
+          
+          // Check if player participated in this event
+          const isParticipant = event.participants?.some((p: any) => p.playerId === participant.playerId);
+          if (!isParticipant) return;
+          
+          eventsJoined++;
+          
+          // Calculate wins and losses from all stages if event has stages
+          if (event.stages && event.stages.length > 0) {
+            event.stages.forEach((stage: any) => {
+              if (stage.standings) {
+                const playerStageStanding = stage.standings.find((s: any) => s.playerId === participant.playerId);
+                if (playerStageStanding) {
+                  totalWins += playerStageStanding.wins || 0;
+                  totalLosses += playerStageStanding.losses || 0;
+                }
+              }
+            });
+          } else {
+            // Fallback to overall standings if no stages
+            const playerStanding = event.standings?.find((s: any) => s.playerId === participant.playerId);
+            if (playerStanding) {
+              totalWins += playerStanding.wins || 0;
+              totalLosses += playerStanding.losses || 0;
+            }
+          }
+        });
+
+        // Update user stats in Firestore (if they exist)
+        try {
+          await updateDoc(doc(db, 'users', participant.playerId), {
+            totalWins,
+            totalLosses,
+            eventsJoined,
+            winRate: totalWins + totalLosses > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0,
+            updatedAt: new Date(),
+          });
+        } catch (error) {
+          // User document might not exist, that's okay
+          console.log(`Could not update stats for user ${participant.playerId}`);
+        }
+      });
+
+      await Promise.all(updatePromises);
+      console.log('✅ Participant stats updated');
+    } catch (error) {
+      console.error('❌ Error updating participant stats:', error);
+    }
   };
 
   const handleSubmitStandings = async () => {
@@ -91,30 +205,63 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
     setLoading(true);
 
     try {
-      // Calculate new standings based on final placements
-      const newStandings = calculateStandings(finalPlacements);
+      // Create stage standings (just for this stage)
+      const stageStandings: Standing[] = finalPlacements.map(placement => ({
+        playerId: placement.playerId,
+        playerName: placement.playerName,
+        points: placement.points,
+        wins: placement.wins,
+        losses: placement.losses,
+        draws: 0,
+        matchesPlayed: placement.wins + placement.losses,
+        opponentWinPercentage: 0,
+        gameWinPercentage: placement.wins + placement.losses > 0 ? placement.wins / (placement.wins + placement.losses) : 0,
+        rank: placement.finalRank,
+      }));
+
+      // Calculate cumulative standings
+      const cumulativeStandings = calculateCumulativeStandings(finalPlacements, selectedStage + 1);
+
+      // Update the stages array
+      const updatedStages = [...event.stages];
+      updatedStages[selectedStage] = {
+        ...updatedStages[selectedStage],
+        isCompleted: true,
+        standings: stageStandings,
+      };
+
+      // Determine if tournament is completed
+      const isLastStage = selectedStage === event.stages.length - 1;
+      const newStatus = isLastStage ? 'completed' : event.status;
 
       // Update event in Firestore
       await updateDoc(doc(db, 'events', event.id), {
-        standings: newStandings,
-        status: 'completed', // Mark tournament as completed
+        stages: updatedStages,
+        standings: cumulativeStandings, // Overall cumulative standings
+        currentStage: selectedStage + 1, // Move to next stage
+        status: newStatus,
         updatedAt: new Date(),
       });
 
       // Update local state
       const updatedEvent = {
         ...event,
-        standings: newStandings,
-        status: 'completed' as const,
+        stages: updatedStages,
+        standings: cumulativeStandings,
+        currentStage: selectedStage + 1,
+        status: newStatus as any,
       };
 
       onStandingsUpdated(updatedEvent);
 
       setShowAddStandings(false);
       setFinalPlacements([]);
-      console.log('✅ Final standings updated');
+      
+      // Update participant stats in the background
+      updateParticipantStats(event.participants);
+      
+      console.log('✅ Stage standings updated');
     } catch (error) {
-      console.error('❌ Error updating standings:', error);
       alert('Failed to update standings. Please try again.');
     } finally {
       setLoading(false);
@@ -170,28 +317,60 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-semibold text-white">Final Standings for {event.name}</h3>
-          <p className="text-white/60 text-sm">Input final tournament rankings from external app</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-white">Tournament Standings - {event.name}</h3>
+            <p className="text-white/60 text-sm">
+              {event.stages?.length > 0 ? `Multi-stage tournament (${event.stages.length} stages)` : 'Single tournament'}
+            </p>
+          </div>
+          {event.status !== 'completed' && event.stages?.length > 0 && (
+            <button
+              onClick={() => setShowAddStandings(true)}
+              className="btn-primary flex items-center space-x-2"
+            >
+              <Trophy className="h-4 w-4" />
+              <span>Input Stage Results</span>
+            </button>
+          )}
         </div>
-        {event.status !== 'completed' && (
-          <button
-            onClick={() => setShowAddStandings(true)}
-            className="btn-primary flex items-center space-x-2"
-          >
-            <Trophy className="h-4 w-4" />
-            <span>Input Final Rankings</span>
-          </button>
+
+        {/* Stage Selection */}
+        {event.stages?.length > 0 && (
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-white/80 font-medium">View Stage:</span>
+              <select
+                value={selectedStage}
+                onChange={(e) => setSelectedStage(parseInt(e.target.value))}
+                className="input-field"
+              >
+                {event.stages.map((stage, index) => (
+                  <option key={index} value={index}>
+                    {stage.name} {stage.isCompleted ? '✓' : '⏳'}
+                  </option>
+                ))}
+                <option value={-1}>Overall Standings</option>
+              </select>
+            </div>
+            
+            <div className="text-sm text-white/60">
+              Current Stage: {event.currentStage < event.stages.length ? event.stages[event.currentStage]?.name : 'Tournament Complete'}
+            </div>
+          </div>
         )}
       </div>
 
       {/* Current Standings */}
-      {event.standings.length > 0 && (
+      {((selectedStage === -1 && event.standings.length > 0) || 
+        (selectedStage >= 0 && event.stages?.[selectedStage]?.standings?.length > 0)) && (
         <div className="card p-6">
           <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
             <Trophy className="h-5 w-5 text-yellow-400" />
-            <span>Current Standings</span>
+            <span>
+              {selectedStage === -1 ? 'Overall Standings' : `${event.stages?.[selectedStage]?.name} Results`}
+            </span>
           </h4>
           
           <div className="overflow-x-auto">
@@ -203,30 +382,38 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                   <th className="text-center py-2 px-3 text-white/80">Points</th>
                   <th className="text-center py-2 px-3 text-white/80">W-L</th>
                   <th className="text-center py-2 px-3 text-white/80">Win Rate</th>
+                  {selectedStage === -1 && (
+                    <th className="text-center py-2 px-3 text-white/80">Stages</th>
+                  )}
                   <th className="text-center py-2 px-3 text-white/80">Bandai ID</th>
                 </tr>
               </thead>
               <tbody>
-                {event.standings.map((standing) => {
-                  const participant = event.participants.find(p => p.playerId === standing.playerId);
-                  const winRate = standing.matchesPlayed > 0 ? ((standing.wins / standing.matchesPlayed) * 100).toFixed(1) : '0.0';
-                  return (
-                    <tr key={standing.playerId} className="border-b border-white/10 hover:bg-white/5">
-                      <td className="py-2 px-3 font-bold text-white">#{standing.rank}</td>
-                      <td className="py-2 px-3 text-white">{standing.playerName}</td>
-                      <td className="py-2 px-3 text-center font-bold text-yellow-400">{standing.points}</td>
-                      <td className="py-2 px-3 text-center text-white/80">
-                        {standing.wins}-{standing.losses}
-                      </td>
-                      <td className="py-2 px-3 text-center text-green-400">
-                        {winRate}%
-                      </td>
-                      <td className="py-2 px-3 text-center text-white/60">
-                        {participant?.bandaiMembershipId || 'N/A'}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {(selectedStage === -1 ? event.standings : event.stages?.[selectedStage]?.standings || [])
+                  .map((standing) => {
+                    const participant = event.participants.find(p => p.playerId === standing.playerId);
+                    return (
+                      <tr key={standing.playerId} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-2 px-3 font-bold text-white">#{standing.rank}</td>
+                        <td className="py-2 px-3 text-white">{standing.playerName}</td>
+                        <td className="py-2 px-3 text-center font-bold text-yellow-400">{standing.points}</td>
+                        <td className="py-2 px-3 text-center text-white/80">
+                          {standing.wins}-{standing.losses}
+                        </td>
+                        <td className="py-2 px-3 text-center text-green-400">
+                          {(standing.gameWinPercentage * 100).toFixed(1)}%
+                        </td>
+                        {selectedStage === -1 && (
+                          <td className="py-2 px-3 text-center text-blue-400">
+                            {standing.matchesPlayed}
+                          </td>
+                        )}
+                        <td className="py-2 px-3 text-center text-white/60">
+                          {participant?.bandaiMembershipId || 'N/A'}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -273,7 +460,17 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
             className="bg-slate-800 rounded-lg p-6 w-full max-w-4xl border border-white/20 max-h-[80vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Input Final Tournament Rankings</h3>
+              <div>
+                <h3 className="text-xl font-semibold text-white">
+                  Input Stage Results - {event.stages?.[selectedStage]?.name}
+                </h3>
+                <p className="text-white/60 text-sm mt-1">
+                  Stage Date: {event.stages?.[selectedStage]?.date 
+                    ? new Date(event.stages[selectedStage].date).toLocaleDateString()
+                    : 'N/A'
+                  }
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setShowAddStandings(false);
@@ -287,7 +484,7 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-white/70">Add players in their final ranking order</p>
+                <p className="text-white/70">Add players in their final ranking order for this stage</p>
                 <button
                   onClick={addPlacement}
                   className="btn-secondary flex items-center space-x-2"
@@ -301,9 +498,9 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                 <div className="space-y-3">
                   {finalPlacements.map((placement, index) => (
                     <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {/* First Row */}
-                        <div className="grid grid-cols-12 gap-3 items-end">
+                      <div className="space-y-4">
+                        {/* First Row - Basic Info */}
+                        <div className="grid grid-cols-12 gap-4 items-end">
                           <div className="col-span-2">
                             <label className="block text-sm text-white/80 mb-1">Rank</label>
                             <input
@@ -352,7 +549,7 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                         </div>
 
                         {/* Second Row - Statistics */}
-                        <div className="grid grid-cols-12 gap-3 items-end">
+                        <div className="grid grid-cols-12 gap-4 items-end">
                           <div className="col-span-4">
                             <label className="block text-sm text-white/80 mb-1">Wins</label>
                             <input
@@ -417,7 +614,7 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                 className="flex-1 btn-primary flex items-center justify-center space-x-2"
               >
                 <Save className="h-4 w-4" />
-                <span>{loading ? 'Saving...' : 'Save Final Rankings'}</span>
+                <span>{loading ? 'Saving...' : 'Save Stage Results'}</span>
               </button>
             </div>
           </motion.div>
@@ -429,7 +626,7 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
         <div className="card p-12 text-center">
           <Users className="h-16 w-16 text-white/40 mx-auto mb-4" />
           <h4 className="text-xl font-semibold text-white mb-2">No Participants Yet</h4>
-          <p className="text-white/60">Players need to register for this event before you can add match results.</p>
+          <p className="text-white/60">Players need to register for this event before you can add stage results.</p>
         </div>
       )}
     </div>

@@ -84,7 +84,6 @@ export function Profile() {
       };
 
       await updateDoc(doc(db, 'users', userProfile.id), updateData);
-      console.log('Profile updated successfully');
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -170,11 +169,24 @@ export function Profile() {
             
             eventsJoined++;
             
-            // Find player's standing in this event
-            const playerStanding = event.standings.find(s => s.playerId === userProfile.id);
-            if (playerStanding) {
-              totalWins += playerStanding.wins;
-              totalLosses += playerStanding.losses;
+            // Calculate wins and losses from all stages if event has stages
+            if (event.stages && event.stages.length > 0) {
+              event.stages.forEach(stage => {
+                if (stage.standings) {
+                  const playerStageStanding = stage.standings.find(s => s.playerId === userProfile.id);
+                  if (playerStageStanding) {
+                    totalWins += playerStageStanding.wins;
+                    totalLosses += playerStageStanding.losses;
+                  }
+                }
+              });
+            } else {
+              // Fallback to overall standings if no stages
+              const playerStanding = event.standings.find(s => s.playerId === userProfile.id);
+              if (playerStanding) {
+                totalWins += playerStanding.wins;
+                totalLosses += playerStanding.losses;
+              }
             }
           });
           

@@ -93,7 +93,6 @@ export function EventDetail() {
         participants: [...prev.participants, participant]
       } : null);
 
-      console.log('✅ Successfully registered for event');
     } catch (error) {
       console.error('❌ Error registering for event:', error);
     } finally {
@@ -364,8 +363,7 @@ export function EventDetail() {
                       <th className="text-left py-3 px-2 text-white/80">Rank</th>
                       <th className="text-left py-3 px-2 text-white/80">Player</th>
                       <th className="text-center py-3 px-2 text-white/80">Points</th>
-                      <th className="text-center py-3 px-2 text-white/80">W-L</th>
-                      <th className="text-center py-3 px-2 text-white/80">Win Rate</th>
+                      <th className="text-center py-3 px-2 text-white/80">W-L-D</th>
                       <th className="text-center py-3 px-2 text-white/80">OMW%</th>
                       <th className="text-center py-3 px-2 text-white/80">GW%</th>
                     </tr>
@@ -382,13 +380,7 @@ export function EventDetail() {
                         <td className="py-3 px-2 text-white font-medium">{standing.playerName}</td>
                         <td className="py-3 px-2 text-center font-bold text-blue-400">{standing.points}</td>
                         <td className="py-3 px-2 text-center text-white/80">
-                          {standing.wins}-{standing.losses}
-                        </td>
-                        <td className="py-3 px-2 text-center text-green-400">
-                          {standing.matchesPlayed > 0 ? 
-                            `${((standing.wins / standing.matchesPlayed) * 100).toFixed(1)}%` : 
-                            '0.0%'
-                          }
+                          {standing.wins}-{standing.losses}-{standing.draws}
                         </td>
                         <td className="py-3 px-2 text-center text-white/60">
                           {(standing.opponentWinPercentage * 100).toFixed(1)}%

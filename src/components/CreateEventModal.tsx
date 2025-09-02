@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, MapPin, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -35,7 +35,6 @@ async function getCoordinatesFromAddress(address: string, city: string, state: s
       };
     }
   } catch (error) {
-    console.warn('Geocoding failed, event will be created without coordinates:', error);
   }
   
   return undefined;
@@ -66,11 +65,32 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
     address: '',
     city: '',
     state: '',
+    numberOfStages: '1',
   });
+
+  const [stages, setStages] = useState<Array<{name: string, date: string}>>([
+    { name: 'Stage 1', date: '' }
+  ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Handle number of stages change
+    if (name === 'numberOfStages') {
+      const numStages = parseInt(value) || 1;
+      const newStages = Array.from({ length: numStages }, (_, i) => ({
+        name: stages[i]?.name || `Stage ${i + 1}`,
+        date: stages[i]?.date || ''
+      }));
+      setStages(newStages);
+    }
+  };
+
+  const handleStageChange = (index: number, field: 'name' | 'date', value: string) => {
+    setStages(prev => prev.map((stage, i) => 
+      i === index ? { ...stage, [field]: value } : stage
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,6 +106,12 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       return;
     }
 
+    // Validate stages
+    if (stages.some(stage => !stage.name || !stage.date)) {
+      setError('Please fill in all stage names and dates');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -94,6 +120,15 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       const endDateTime = formData.endDate && formData.endTime 
         ? new Date(`${formData.endDate}T${formData.endTime}`)
         : new Date(startDateTime.getTime() + 4 * 60 * 60 * 1000); // Default 4 hours
+
+      // Create stages with proper dates
+      const eventStages = stages.map((stage, index) => ({
+        stageNumber: index + 1,
+        name: stage.name,
+        date: new Date(stage.date),
+        isCompleted: false,
+        standings: []
+      }));
 
       const eventData = {
         name: formData.name,
@@ -116,6 +151,8 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         participants: [],
         rounds: [],
         standings: [],
+        stages: eventStages,
+        currentStage: 0, // No stage completed yet
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -127,6 +164,8 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         ...eventData,
         startDate: startDateTime,
         endDate: endDateTime,
+        stages: eventStages,
+        currentStage: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -149,9 +188,10 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         address: '',
         city: '',
         state: '',
+        numberOfStages: '1',
       });
+      setStages([{ name: 'Stage 1', date: '' }]);
     } catch (error) {
-      console.error('Error creating event:', error);
       setError('Failed to create event. Please try again.');
     } finally {
       setLoading(false);
@@ -297,6 +337,72 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                   className="input-field w-full"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Tournament Stages */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <Trophy className="h-5 w-5 mr-2" />
+              Tournament Stages
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Number of Stages *
+                </label>
+                <select
+                  name="numberOfStages"
+                  value={formData.numberOfStages}
+                  onChange={handleInputChange}
+                  className="input-field w-full md:w-48"
+                  required
+                >
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
+                    <option key={num} value={num.toString()}>
+                      {num} Stage{num > 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-white/60 text-sm mt-1">
+                  Each stage will have its own tournament and standings
+                </p>
+              </div>
+
+              {stages.map((stage, index) => (
+                <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-md font-medium text-white mb-3">
+                    Stage {index + 1}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        Stage Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={stage.name}
+                        onChange={(e) => handleStageChange(index, 'name', e.target.value)}
+                        className="input-field w-full"
+                        placeholder={`Stage ${index + 1}`}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={stage.date}
+                        onChange={(e) => handleStageChange(index, 'date', e.target.value)}
+                        className="input-field w-full"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
