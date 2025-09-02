@@ -107,6 +107,58 @@
     box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.3);
   }
   
+  /* Select Elements */
+  select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+  
+  select.input-field option {
+    background-color: #1e293b; /* slate-800 */
+    color: white;
+    padding: 8px 12px;
+    border: none;
+  }
+  
+  select.input-field option:hover {
+    background-color: #334155; /* slate-700 */
+  }
+  
+  select.input-field option:checked {
+    background-color: #3b82f6; /* blue-500 */
+    color: white;
+  }
+  
+  /* Firefox specific styles */
+  @-moz-document url-prefix() {
+    select.input-field {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    }
+  }
+  
+  /* WebKit/Blink specific styles */
+  select.input-field::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  select.input-field::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+  
+  select.input-field::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+  }
+  
+  select.input-field::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+  
   /* Accessible Navigation */
   .nav-link {
     color: rgba(255, 255, 255, 0.9);
