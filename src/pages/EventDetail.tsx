@@ -144,7 +144,6 @@ export function EventDetail() {
   };
 
   const isStore = userProfile?.userType === 'store';
-  const isParticipant = event?.participants.some(p => p.playerId === userProfile?.id);
   const canEdit = isStore && event?.storeId === userProfile?.id;
 
   if (loading) {
