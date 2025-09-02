@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -34,29 +34,26 @@ export function Events() {
       setLoading(true);
       
       try {
+        
         let eventsQuery;
         
         if (userProfile.userType === 'store') {
-          // For stores: fetch events they created
+          // For stores: fetch events they created (remove orderBy to avoid index issues)
           eventsQuery = query(
             collection(db, 'events'),
-            where('storeId', '==', userProfile.id),
-            orderBy('createdAt', 'desc')
+            where('storeId', '==', userProfile.id)
           );
         } else {
-          // For players: fetch events they're participating in
+          // For players: fetch ALL events and filter client-side
+          // This avoids the complex array-contains issue
           eventsQuery = query(
-            collection(db, 'events'),
-            where('participants', 'array-contains', {
-              playerId: userProfile.id,
-              playerName: userProfile.username
-            }),
-            orderBy('startDate', 'desc')
+            collection(db, 'events')
           );
         }
         
         const eventsSnapshot = await getDocs(eventsQuery);
-        const userEvents = eventsSnapshot.docs.map(doc => ({
+        
+        let userEvents = eventsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           startDate: doc.data().startDate?.toDate() || new Date(),
@@ -64,6 +61,24 @@ export function Events() {
           createdAt: doc.data().createdAt?.toDate() || new Date(),
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         })) as League[];
+        
+        // For players: filter events where they are participants (client-side)
+        if (userProfile.userType === 'player') {
+          userEvents = userEvents.filter(event => 
+            event.participants.some(participant => 
+              participant.playerId === userProfile.id
+            )
+          );
+        }
+        
+        // Sort by date (client-side to avoid index issues)
+        userEvents.sort((a, b) => {
+          if (userProfile.userType === 'store') {
+            return b.createdAt.getTime() - a.createdAt.getTime(); // newest first
+          } else {
+            return b.startDate.getTime() - a.startDate.getTime(); // upcoming first
+          }
+        });
         
         setEvents(userEvents);
       } catch (error) {
