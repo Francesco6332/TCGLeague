@@ -91,6 +91,11 @@ export function Events() {
             endDate: data.endDate?.toDate() || new Date(),
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || new Date(),
+            // Convert stage dates from Firestore timestamps to Date objects
+            stages: data.stages?.map((stage: any) => ({
+              ...stage,
+              date: stage.date?.toDate ? stage.date.toDate() : new Date(stage.date)
+            })) || []
           };
         }) as League[];
         

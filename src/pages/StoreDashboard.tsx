@@ -46,14 +46,22 @@ export function StoreDashboard() {
         );
         
         const eventsSnapshot = await getDocs(eventsQuery);
-        const storeEvents = eventsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          startDate: doc.data().startDate?.toDate() || new Date(),
-          endDate: doc.data().endDate?.toDate() || new Date(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        })) as League[];
+        const storeEvents = eventsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            startDate: data.startDate?.toDate() || new Date(),
+            endDate: data.endDate?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            // Convert stage dates from Firestore timestamps to Date objects
+            stages: data.stages?.map((stage: any) => ({
+              ...stage,
+              date: stage.date?.toDate ? stage.date.toDate() : new Date(stage.date)
+            })) || []
+          };
+        }) as League[];
         
         // Sort by creation date (newest first)
         storeEvents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

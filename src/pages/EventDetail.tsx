@@ -50,6 +50,11 @@ export function EventDetail() {
             endDate: eventData.endDate?.toDate() || new Date(),
             createdAt: eventData.createdAt?.toDate() || new Date(),
             updatedAt: eventData.updatedAt?.toDate() || new Date(),
+            // Convert stage dates from Firestore timestamps to Date objects
+            stages: eventData.stages?.map((stage: any) => ({
+              ...stage,
+              date: stage.date?.toDate ? stage.date.toDate() : new Date(stage.date)
+            })) || []
           } as League;
           
           setEvent(event);
