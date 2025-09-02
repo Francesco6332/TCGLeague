@@ -8,7 +8,8 @@ import {
   Trophy,
   Layers,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -30,6 +31,7 @@ export function Navbar() {
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/events', label: 'My Events', icon: Calendar },
+    ...(userProfile?.userType === 'store' ? [{ path: '/dashboard', label: 'Dashboard', icon: Settings }] : []),
     { path: '/deck-builder', label: 'Deck Builder', icon: Layers },
     { path: '/profile', label: 'Profile', icon: User },
   ];

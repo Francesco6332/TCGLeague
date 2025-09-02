@@ -204,10 +204,13 @@ export function EventDetail() {
           
           {/* Edit Button for Store Owners */}
           {canEdit && (
-            <button className="btn-primary flex items-center space-x-2">
+            <Link 
+              to="/dashboard"
+              className="btn-primary flex items-center space-x-2"
+            >
               <Edit className="h-4 w-4" />
-              <span>Edit Event</span>
-            </button>
+              <span>Manage in Dashboard</span>
+            </Link>
           )}
         </div>
       </motion.div>

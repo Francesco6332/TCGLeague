@@ -9,6 +9,7 @@ import { Events } from './pages/Events';
 import { Profile } from './pages/Profile';
 import { DeckBuilder } from './pages/DeckBuilder';
 import { EventDetail } from './pages/EventDetail';
+import { StoreDashboard } from './pages/StoreDashboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
@@ -112,6 +113,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <StoreDashboard />
             </Layout>
           </ProtectedRoute>
         }
