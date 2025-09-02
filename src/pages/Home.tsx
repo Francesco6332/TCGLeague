@@ -35,25 +35,35 @@ export function Home() {
       setLoading(true);
       
       try {
-        // Fetch events
+        console.log('🔍 Fetching events from Firestore...'); // Debug
+        
+        // Simplified query first - remove orderBy to avoid index issues
         const eventsQuery = query(
           collection(db, 'events'),
           where('status', 'in', ['upcoming', 'ongoing']),
-          orderBy('startDate', 'asc'),
           limit(10)
         );
         const eventsSnapshot = await getDocs(eventsQuery);
-        let events = eventsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          startDate: doc.data().startDate?.toDate() || new Date(),
-          endDate: doc.data().endDate?.toDate() || new Date(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        })) as League[];
+        
+        console.log('📊 Found events:', eventsSnapshot.size); // Debug
+        let events = eventsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('📅 Event data:', { id: doc.id, name: data.name, status: data.status }); // Debug
+          return {
+            id: doc.id,
+            ...data,
+            startDate: data.startDate?.toDate() || new Date(),
+            endDate: data.endDate?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+          };
+        }) as League[];
+
+        console.log('✅ Processed events:', events.length); // Debug
 
         // Sort by distance if user location is available
         if (latitude && longitude) {
+          console.log('🗺️ User location:', { latitude, longitude }); // Debug
           events = events
             .map(event => ({
               ...event,
@@ -96,7 +106,13 @@ export function Home() {
         
         setNews(newsData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('❌ Error fetching data:', error);
+        
+        // Check if it's a Firestore index error
+        if (error instanceof Error && error.message.includes('index')) {
+          console.error('🔗 Firestore index missing! Create the index using the link in the console.');
+        }
+        
         // Set empty arrays on error
         setNearbyEvents([]);
         setNews([]);
@@ -106,7 +122,7 @@ export function Home() {
     };
 
     fetchData();
-  }, []);
+  }, [latitude, longitude]); // Re-fetch when location changes
 
   const getStatusColor = (status: League['status']) => {
     switch (status) {
