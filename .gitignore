@@ -23,21 +23,6 @@ dist-ssr
 app-updates.json
 public/app-updates.json
 
-# Database files (internal only)
-supabase-schema.sql
-card-data.json
-test-supabase.js
-SUPABASE_SETUP.md
-supabase-rls-fix.sql
-complete-card-database.sql
-one-piece-cards-list.json
-card-images-setup.md
-upload-images-script.js
-create-placeholder.js
-
-# Card images folder
-card-images/
-
 # Local card images (excluded to save space)
 public/images/
 
