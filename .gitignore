@@ -26,6 +26,8 @@ public/app-updates.json
 # Database files (internal only)
 supabase-schema.sql
 card-data.json
+test-supabase.js
+SUPABASE_SETUP.md
 
 # Editor directories and files
 .vscode/*
