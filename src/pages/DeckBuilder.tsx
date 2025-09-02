@@ -40,7 +40,7 @@ export function DeckBuilder() {
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState<'Standard' | 'Limited' | 'Championship' | 'Casual'>('Standard');
 
-  const sets = ['OP01', 'EB1', 'EB02'];
+  const sets = ['OP01', 'OP02', 'OP03', 'OP04', 'EB01', 'EB02'];
   const colors = ['Red', 'Blue', 'Green', 'Purple', 'Yellow', 'Black', 'Colorless'];
   const types = ['Leader', 'Character', 'Event', 'Stage', 'DON!!'];
   const rarities = ['C', 'UC', 'R', 'SR', 'SEC', 'L', 'P'];

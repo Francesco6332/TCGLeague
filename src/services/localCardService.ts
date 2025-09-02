@@ -34,7 +34,7 @@ interface Deck {
   updated_at: string;
 }
 
-// Sample cards for the available sets (OP01, EB1, EB02)
+// Sample cards for the available sets (OP01, OP02, OP03, OP04, EB01, EB02)
 const sampleCards: Card[] = [
   // OP01 Sample Cards
   {
@@ -103,7 +103,91 @@ const sampleCards: Card[] = [
     effect: '[On Play] K.O. up to 1 of your opponent\'s Characters with 4000 power or less.',
     attribute: 'Straw Hat Crew'
   },
-  // EB1 Sample Cards
+  // OP02 Sample Cards
+  {
+    id: 'op02-001',
+    card_number: 'OP02-001',
+    name: 'Trafalgar Law',
+    cost: 0,
+    power: 5000,
+    life: 4,
+    color: 'Blue',
+    type: 'Leader',
+    rarity: 'L',
+    set_code: 'OP02',
+    effect: '[Activate: Main] [Once per turn] Give up to 1 of your {Heart Pirates} type Character cards +1000 power during this turn.',
+    attribute: 'Heart Pirates'
+  },
+  {
+    id: 'op02-002',
+    card_number: 'OP02-002',
+    name: 'Eustass Kid',
+    cost: 4,
+    power: 5000,
+    color: 'Blue',
+    type: 'Character',
+    rarity: 'SR',
+    set_code: 'OP02',
+    effect: '[On Play] K.O. up to 1 of your opponent\'s Characters with 4000 power or less.',
+    attribute: 'Kid Pirates'
+  },
+  // OP03 Sample Cards
+  {
+    id: 'op03-001',
+    card_number: 'OP03-001',
+    name: 'Kaido',
+    cost: 0,
+    power: 5000,
+    life: 4,
+    color: 'Purple',
+    type: 'Leader',
+    rarity: 'L',
+    set_code: 'OP03',
+    effect: '[Activate: Main] [Once per turn] Give all of your {Beast Pirates} type Character cards +1000 power during this turn.',
+    attribute: 'Four Emperors/Beast Pirates'
+  },
+  {
+    id: 'op03-002',
+    card_number: 'OP03-002',
+    name: 'King',
+    cost: 5,
+    power: 6000,
+    color: 'Purple',
+    type: 'Character',
+    rarity: 'SR',
+    set_code: 'OP03',
+    effect: '[On Play] Give up to 1 of your Characters +2000 power during this turn.',
+    attribute: 'Beast Pirates'
+  },
+  // OP04 Sample Cards
+  {
+    id: 'op04-001',
+    card_number: 'OP04-001',
+    name: 'Big Mom',
+    cost: 0,
+    power: 5000,
+    life: 4,
+    color: 'Yellow',
+    type: 'Leader',
+    rarity: 'L',
+    set_code: 'OP04',
+    effect: '[Activate: Main] [Once per turn] Give all of your {Big Mom Pirates} type Character cards +1000 power during this turn.',
+    attribute: 'Four Emperors/Big Mom Pirates'
+  },
+  {
+    id: 'op04-002',
+    card_number: 'OP04-002',
+    name: 'Katakuri',
+    cost: 6,
+    power: 7000,
+    color: 'Yellow',
+    type: 'Character',
+    rarity: 'SR',
+    set_code: 'OP04',
+    effect: '[On Play] K.O. up to 1 of your opponent\'s Characters with 5000 power or less.',
+    attribute: 'Big Mom Pirates'
+  },
+  // EB01 Sample Cards
   {
     id: 'eb01-001',
     card_number: 'EB01-001',
@@ -113,7 +197,7 @@ const sampleCards: Card[] = [
     color: 'Red',
     type: 'Character',
     rarity: 'SR',
-    set_code: 'EB1',
+    set_code: 'EB01',
     effect: '[On Play] Deal 1 damage to up to 1 of your opponent\'s Characters.',
     attribute: 'Whitebeard Pirates'
   },
@@ -126,7 +210,7 @@ const sampleCards: Card[] = [
     color: 'Red',
     type: 'Character',
     rarity: 'SR',
-    set_code: 'EB1',
+    set_code: 'EB01',
     effect: '[On Play] Give up to 1 of your Characters +2000 power during this turn.',
     attribute: 'Whitebeard Pirates'
   },

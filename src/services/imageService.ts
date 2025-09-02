@@ -23,8 +23,8 @@ export class ImageService {
         return `/images/card-placeholder.svg`;
       }
 
-      // Images are in /images/{SET}/{SET}/ structure
-      return `/images/${setCode}/${setCode}/${cardNumber}.png`;
+      // Images are in /images/{SET}/ structure (not nested)
+      return `/images/${setCode}/${cardNumber}.png`;
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return `/images/card-placeholder.svg`;
@@ -49,7 +49,7 @@ export class ImageService {
         return `/images/card-placeholder.svg`;
       }
 
-      return `/images/${setCode}/${setCode}/${cardNumber}.${format}`;
+      return `/images/${setCode}/${cardNumber}.${format}`;
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return `/images/card-placeholder.svg`;
@@ -84,8 +84,8 @@ export class ImageService {
     
     // List of sets that should have images
     const availableSets = [
-      // Currently available sets
-      'OP01', 'EB1', 'EB02'
+      // Available sets based on actual folders
+      'OP01', 'OP02', 'OP03', 'OP04', 'EB01', 'EB02'
     ];
     
     return availableSets.includes(setCode);
