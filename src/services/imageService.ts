@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { GITHUB_IMAGE_URLS } from '../../github-image-mapping.js';
 
 /**
  * Service for managing One Piece TCG card images
- * Currently uses placeholder images since external hosting is not available
+ * Uses GitHub Releases for free image hosting
  */
 export class ImageService {
   /**
@@ -23,7 +24,12 @@ export class ImageService {
         return this.getPlaceholderUrl();
       }
 
-      // For now, return placeholder since we don't have external image hosting
+      // Use GitHub Releases URLs
+      const imageUrl = GITHUB_IMAGE_URLS[`${setCode}-${cardNumber}`];
+      if (imageUrl) {
+        return imageUrl;
+      }
+      
       return this.getPlaceholderUrl();
     } catch (error) {
       console.error('Error getting card image URL:', error);
@@ -87,6 +93,20 @@ export class ImageService {
    * Get fallback URLs for different image hosting services
    */
   static getFallbackUrls(cardNumber: string): string[] {
+    if (!cardNumber) return [this.getPlaceholderUrl()];
+
+    const setCode = cardNumber.split('-')[0];
+    if (!setCode) return [this.getPlaceholderUrl()];
+
+    const imageUrl = GITHUB_IMAGE_URLS[`${setCode}-${cardNumber}`];
+    
+    if (imageUrl) {
+      return [
+        imageUrl,
+        this.getPlaceholderUrl()
+      ];
+    }
+
     return [this.getPlaceholderUrl()];
   }
 }
