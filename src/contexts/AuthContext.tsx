@@ -117,7 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     let userData: Partial<Player | Store>;
 
-    console.log('Processing userType:', userType); // Debug
     
     if (userType === 'player') {
       userData = {
@@ -126,7 +125,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         participatingEvents: [],
         decks: [],
       } as Partial<Player>;
-      console.log('Created PLAYER userData'); // Debug
     } else if (userType === 'store') {
       userData = {
         ...baseUserData,
@@ -144,15 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: storeInfo?.description,
         organizedEvents: [],
       } as Partial<Store>;
-      console.log('Created STORE userData'); // Debug
     } else {
       throw new Error(`Invalid user type: ${userType}`);
     }
 
-    console.log('Saving user data:', userData); // Debug log
     try {
       await setDoc(doc(db, 'users', user.uid), userData);
-      console.log('✅ User data saved successfully to Firestore'); // Debug
     } catch (firestoreError) {
       console.error('❌ Failed to save user data to Firestore:', firestoreError);
       throw firestoreError;

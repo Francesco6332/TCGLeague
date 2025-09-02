@@ -78,7 +78,6 @@ export function DeckBuilder() {
 
   const handleImportDeck = () => {
     // TODO: Implement deck import from clipboard
-    console.log('Import deck from clipboard');
   };
 
   const getColorGradient = (colors: string[]) => {
