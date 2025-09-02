@@ -23,9 +23,8 @@ export class ImageService {
         return this.getPlaceholderUrl();
       }
 
-      // Use external image hosting service
-      // You can replace this with your preferred image hosting service
-      return `https://images.onepiece-cardgame.com/${setCode}/${cardNumber}.png`;
+      // Use Cloudflare Images service
+      return `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/public`;
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return this.getPlaceholderUrl();
@@ -50,7 +49,7 @@ export class ImageService {
         return this.getPlaceholderUrl();
       }
 
-      return `https://images.onepiece-cardgame.com/${setCode}/${cardNumber}.${format}`;
+      return `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/public`;
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return this.getPlaceholderUrl();
@@ -100,9 +99,9 @@ export class ImageService {
     if (!setCode) return [this.getPlaceholderUrl()];
 
     return [
-      `https://images.onepiece-cardgame.com/${setCode}/${cardNumber}.png`,
-      `https://cdn.onepiece-tcg.com/images/${setCode}/${cardNumber}.png`,
-      `https://static.onepiece-tcg.net/cards/${setCode}/${cardNumber}.png`,
+      `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/public`,
+      `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/w=400`,
+      `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/w=200`,
       this.getPlaceholderUrl()
     ];
   }
