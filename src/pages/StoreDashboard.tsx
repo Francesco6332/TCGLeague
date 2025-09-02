@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Clock,
   Target,
-  Settings
+  Settings,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react';
 import type { League } from '../types';
 import { CreateEventModal } from '../components/CreateEventModal';
@@ -27,6 +29,9 @@ export function StoreDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<League | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'results'>('overview');
+  const [editingEvent, setEditingEvent] = useState<League | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<League | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchStoreEvents = async () => {
@@ -76,6 +81,39 @@ export function StoreDashboard() {
       )
     );
     setSelectedEvent(updatedEvent);
+  };
+
+  const handleEventUpdated = (updatedEvent: League) => {
+    setEvents(prev => 
+      prev.map(event => 
+        event.id === updatedEvent.id ? updatedEvent : event
+      )
+    );
+    setEditingEvent(null);
+  };
+
+  const handleDeleteEvent = async (eventToDelete: League) => {
+    if (!eventToDelete) return;
+    
+    setDeleting(true);
+    
+    try {
+      // Import deleteDoc here to avoid loading it unless needed
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      
+      await deleteDoc(doc(db, 'events', eventToDelete.id));
+      
+      // Remove from local state
+      setEvents(prev => prev.filter(event => event.id !== eventToDelete.id));
+      setShowDeleteConfirm(null);
+      
+      console.log('✅ Event deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting event:', error);
+      alert('Failed to delete event. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getStatusColor = (status: League['status']) => {
@@ -350,12 +388,34 @@ export function StoreDashboard() {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
                           {event.status}
                         </span>
-                        <Link 
-                          to={`/events/${event.id}`}
-                          className="btn-secondary p-2"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Link>
+                        
+                        {/* Event Actions */}
+                        <div className="flex items-center space-x-1">
+                          <Link 
+                            to={`/events/${event.id}`}
+                            className="btn-secondary p-2"
+                            title="View Event"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Link>
+                          
+                          <button
+                            onClick={() => setEditingEvent(event)}
+                            className="btn-secondary p-2"
+                            title="Edit Event"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          
+                          <button
+                            onClick={() => setShowDeleteConfirm(event)}
+                            className="btn-secondary p-2 text-red-400 hover:text-red-300"
+                            title="Delete Event"
+                            disabled={event.participants.length > 0}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
@@ -462,6 +522,80 @@ export function StoreDashboard() {
         onClose={() => setShowCreateModal(false)}
         onEventCreated={handleEventCreated}
       />
+
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <CreateEventModal
+          isOpen={true}
+          onClose={() => setEditingEvent(null)}
+          onEventCreated={handleEventUpdated}
+          editingEvent={editingEvent}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-800 rounded-lg p-6 w-full max-w-md border border-white/20"
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Delete Event</h3>
+                <p className="text-white/60 text-sm">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-white/80 mb-3">
+                Are you sure you want to delete <strong>{showDeleteConfirm.name}</strong>?
+              </p>
+              
+              {showDeleteConfirm.participants.length > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3">
+                  <p className="text-red-400 text-sm font-medium">⚠️ Warning</p>
+                  <p className="text-red-300 text-sm">
+                    This event has {showDeleteConfirm.participants.length} registered participants. 
+                    Deleting it will remove all participant data and results.
+                  </p>
+                </div>
+              )}
+
+              {showDeleteConfirm.standings.length > 0 && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                  <p className="text-orange-400 text-sm font-medium">📊 Data Loss Warning</p>
+                  <p className="text-orange-300 text-sm">
+                    This event has standings data that will be permanently lost.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 btn-secondary"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteEvent(showDeleteConfirm)}
+                disabled={deleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>{deleting ? 'Deleting...' : 'Delete Event'}</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

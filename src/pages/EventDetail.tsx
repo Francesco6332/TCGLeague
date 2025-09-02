@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import { 
@@ -14,17 +14,23 @@ import {
   Edit,
   UserPlus,
   Award,
-  Star
+  Star,
+  Trash2
 } from 'lucide-react';
 import type { League } from '../types';
+import { CreateEventModal } from '../components/CreateEventModal';
 
 export function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<League | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'participants'>('overview');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -141,6 +147,27 @@ export function EventDetail() {
     }).format(date);
   };
 
+  const handleEventUpdated = (updatedEvent: League) => {
+    setEvent(updatedEvent);
+    setShowEditModal(false);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!event || !id) return;
+    
+    setDeleting(true);
+    
+    try {
+      await deleteDoc(doc(db, 'events', id));
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('❌ Error deleting event:', error);
+      alert('Failed to delete event. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const isStore = userProfile?.userType === 'store';
   const canEdit = isStore && event?.storeId === userProfile?.id;
 
@@ -201,15 +228,34 @@ export function EventDetail() {
             </button>
           )}
           
-          {/* Edit Button for Store Owners */}
+          {/* Store Owner Actions */}
           {canEdit && (
-            <Link 
-              to="/dashboard"
-              className="btn-primary flex items-center space-x-2"
-            >
-              <Edit className="h-4 w-4" />
-              <span>Manage in Dashboard</span>
-            </Link>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="btn-secondary flex items-center space-x-2"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Edit Event</span>
+              </button>
+              
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="btn-secondary flex items-center space-x-2 text-red-400 hover:text-red-300"
+                disabled={event.participants.length > 0}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </button>
+              
+              <Link 
+                to="/dashboard"
+                className="btn-primary flex items-center space-x-2"
+              >
+                <Trophy className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+            </div>
           )}
         </div>
       </motion.div>
@@ -428,8 +474,81 @@ export function EventDetail() {
           </div>
         )}
 
-
       </motion.div>
+
+      {/* Edit Event Modal */}
+      {event && (
+        <CreateEventModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onEventCreated={handleEventUpdated}
+          editingEvent={event}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && event && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-800 rounded-lg p-6 w-full max-w-md border border-white/20"
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Delete Event</h3>
+                <p className="text-white/60 text-sm">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-white/80 mb-3">
+                Are you sure you want to delete <strong>{event.name}</strong>?
+              </p>
+              
+              {event.participants.length > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3">
+                  <p className="text-red-400 text-sm font-medium">⚠️ Warning</p>
+                  <p className="text-red-300 text-sm">
+                    This event has {event.participants.length} registered participants. 
+                    Deleting it will remove all participant data and results.
+                  </p>
+                </div>
+              )}
+
+              {event.standings.length > 0 && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                  <p className="text-orange-400 text-sm font-medium">📊 Data Loss Warning</p>
+                  <p className="text-orange-300 text-sm">
+                    This event has standings data that will be permanently lost.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 btn-secondary"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteEvent}
+                disabled={deleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>{deleting ? 'Deleting...' : 'Delete Event'}</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

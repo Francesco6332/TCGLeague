@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, MapPin, DollarSign, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { League } from '../types';
 import { AccessibleModal } from './ui/AccessibleModal';
@@ -44,9 +44,10 @@ interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEventCreated: (event: League) => void;
+  editingEvent?: League;
 }
 
-export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEventModalProps) {
+export function CreateEventModal({ isOpen, onClose, onEventCreated, editingEvent }: CreateEventModalProps) {
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +72,59 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
   const [stages, setStages] = useState<Array<{name: string, date: string}>>([
     { name: 'Stage 1', date: '' }
   ]);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingEvent) {
+      const startDate = editingEvent.startDate.toISOString().split('T')[0];
+      const startTime = editingEvent.startDate.toTimeString().slice(0, 5);
+      const endDate = editingEvent.endDate.toISOString().split('T')[0];
+      const endTime = editingEvent.endDate.toTimeString().slice(0, 5);
+
+      setFormData({
+        name: editingEvent.name,
+        description: editingEvent.description,
+        format: editingEvent.format,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        maxParticipants: editingEvent.maxParticipants?.toString() || '',
+        entryFee: editingEvent.entryFee?.toString() || '',
+        prizePool: editingEvent.prizePool || '',
+        address: editingEvent.location.address,
+        city: editingEvent.location.city,
+        state: editingEvent.location.state,
+        numberOfStages: editingEvent.stages?.length.toString() || '1',
+      });
+
+      if (editingEvent.stages && editingEvent.stages.length > 0) {
+        setStages(editingEvent.stages.map(stage => ({
+          name: stage.name,
+          date: stage.date.toISOString().split('T')[0],
+        })));
+      }
+    } else {
+      // Reset form for new event
+      setFormData({
+        name: '',
+        description: '',
+        format: 'Standard',
+        startDate: '',
+        startTime: '',
+        endDate: '',
+        endTime: '',
+        maxParticipants: '',
+        entryFee: '',
+        prizePool: '',
+        address: '',
+        city: '',
+        state: '',
+        numberOfStages: '1',
+      });
+      setStages([{ name: 'Stage 1', date: '' }]);
+    }
+  }, [editingEvent]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -157,20 +211,48 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         updatedAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, 'events'), eventData);
-      
-      const newEvent: League = {
-        id: docRef.id,
-        ...eventData,
-        startDate: startDateTime,
-        endDate: endDateTime,
-        stages: eventStages,
-        currentStage: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      let resultEvent: League;
 
-      onEventCreated(newEvent);
+      if (editingEvent) {
+        // Update existing event
+        const updateData = {
+          ...eventData,
+          // Preserve existing data for events with participants
+          participants: editingEvent.participants,
+          rounds: editingEvent.rounds,
+          standings: editingEvent.standings,
+          currentStage: editingEvent.currentStage,
+          createdAt: editingEvent.createdAt, // Keep original creation date
+        };
+
+        await updateDoc(doc(db, 'events', editingEvent.id), updateData);
+        
+        resultEvent = {
+          id: editingEvent.id,
+          ...updateData,
+          startDate: startDateTime,
+          endDate: endDateTime,
+          stages: eventStages,
+          createdAt: editingEvent.createdAt,
+          updatedAt: new Date(),
+        };
+      } else {
+        // Create new event
+        const docRef = await addDoc(collection(db, 'events'), eventData);
+        
+        resultEvent = {
+          id: docRef.id,
+          ...eventData,
+          startDate: startDateTime,
+          endDate: endDateTime,
+          stages: eventStages,
+          currentStage: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+
+      onEventCreated(resultEvent);
       onClose();
       
       // Reset form
@@ -202,7 +284,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
     <AccessibleModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Event"
+      title={editingEvent ? "Edit Event" : "Create New Event"}
       size="lg"
     >
       <FormError error={error} id="create-event-error" />
@@ -512,11 +594,11 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
             type="submit"
             variant="primary"
             loading={loading}
-            loadingText="Creating Event..."
+            loadingText={editingEvent ? "Updating Event..." : "Creating Event..."}
             className="flex-1"
           >
             <Calendar className="h-4 w-4" aria-hidden="true" />
-            <span>Create Event</span>
+            <span>{editingEvent ? "Update Event" : "Create Event"}</span>
           </FormButton>
         </div>
       </AccessibleForm>
