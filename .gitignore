@@ -29,6 +29,14 @@ card-data.json
 test-supabase.js
 SUPABASE_SETUP.md
 supabase-rls-fix.sql
+complete-card-database.sql
+one-piece-cards-list.json
+card-images-setup.md
+upload-images-script.js
+create-placeholder.js
+
+# Card images folder
+card-images/
 
 # Editor directories and files
 .vscode/*

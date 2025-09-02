@@ -11,6 +11,7 @@ import {
   X,
   CreditCard
 } from 'lucide-react';
+import { CardImage } from '../components/ui/CardImage';
 import { deckService, cardService, type Deck, type Card } from '../lib/supabase';
 
 interface DeckWithCardCount extends Deck {
@@ -247,11 +248,17 @@ export function DeckBuilder() {
                 <h3 className="text-lg font-medium text-white mb-2">Leader</h3>
                 <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <div className="flex items-center space-x-3">
+                    <CardImage
+                      cardNumber={selectedDeck.leader_card.card_number}
+                      cardName={selectedDeck.leader_card.name}
+                      size="sm"
+                      className="flex-shrink-0"
+                    />
                     <div className={`w-3 h-3 rounded-full ${getColorClass(selectedDeck.leader_card.color)}`} />
                     <div>
                       <div className="font-medium text-white">{selectedDeck.leader_card.name}</div>
                       <div className="text-sm text-white/60">
-                        {selectedDeck.leader_card.card_number} • {selectedDeck.leader_card.power} Power
+                        {selectedDeck.leader_card.card_number} • {selectedDeck.leader_card.power} Power • {selectedDeck.leader_card.life} Life
                       </div>
                     </div>
                   </div>
@@ -264,6 +271,12 @@ export function DeckBuilder() {
                 <div key={deckCard.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
+                      <CardImage
+                        cardNumber={deckCard.card?.card_number || ''}
+                        cardName={deckCard.card?.name || 'Unknown Card'}
+                        size="sm"
+                        className="flex-shrink-0"
+                      />
                       <div className={`w-3 h-3 rounded-full ${getColorClass(deckCard.card?.color || 'Colorless')}`} />
                       <div>
                         <div className="font-medium text-white">{deckCard.card?.name}</div>
@@ -385,32 +398,38 @@ export function DeckBuilder() {
                   ) : (
                     filteredCards.map((card) => (
                       <div key={card.id} className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-white/20 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-3 h-3 rounded-full ${getColorClass(card.color)}`} />
-                            <div>
-                              <div className="font-medium text-white flex items-center space-x-2">
-                                <span>{card.name}</span>
+                        <div className="flex items-start space-x-3">
+                          <CardImage
+                            cardNumber={card.card_number}
+                            cardName={card.name}
+                            size="sm"
+                            className="flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <div className={`w-3 h-3 rounded-full ${getColorClass(card.color)}`} />
+                                <div className="font-medium text-white">{card.name}</div>
                                 <span className={`text-xs font-bold ${getRarityColor(card.rarity)}`}>
                                   {card.rarity}
                                 </span>
                               </div>
-                              <div className="text-sm text-white/60">
-                                {card.card_number} • {card.type} • {card.cost !== null ? `${card.cost} Cost` : 'No Cost'}
-                              </div>
-                              {card.effect && (
-                                <div className="text-xs text-white/50 mt-1 line-clamp-2">
-                                  {card.effect}
-                                </div>
-                              )}
+                              <button
+                                onClick={() => handleAddCardToDeck(card.id)}
+                                className="btn-primary px-3 py-1 text-sm"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
                             </div>
+                            <div className="text-sm text-white/60 mb-1">
+                              {card.card_number} • {card.type} • {card.cost !== null ? `${card.cost} Cost` : 'No Cost'}
+                            </div>
+                            {card.effect && (
+                              <div className="text-xs text-white/50 line-clamp-2">
+                                {card.effect}
+                              </div>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleAddCardToDeck(card.id)}
-                            className="btn-primary px-3 py-1 text-sm"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
                         </div>
                       </div>
                     ))
