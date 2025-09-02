@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import type { League } from '../types';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -19,6 +20,14 @@ import {
 export function Profile() {
   const { userProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [stats, setStats] = useState({
+    eventsCount: 0,
+    totalPlayers: 0, // for stores
+    wins: 0, // for players
+    losses: 0, // for players
+    winRate: 0, // for players
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
   const [formData, setFormData] = useState({
     username: userProfile?.username || '',
     email: userProfile?.email || '',
@@ -113,6 +122,90 @@ export function Profile() {
 
   const isStore = userProfile.userType === 'store';
 
+  // Calculate real statistics
+  useEffect(() => {
+    const calculateStats = async () => {
+      if (!userProfile) return;
+      
+      setLoadingStats(true);
+      
+      try {
+        if (userProfile.userType === 'store') {
+          // Store stats: count events and total participants
+          const eventsQuery = query(
+            collection(db, 'events'),
+            where('storeId', '==', userProfile.id)
+          );
+          
+          const eventsSnapshot = await getDocs(eventsQuery);
+          const storeEvents = eventsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as League[];
+          
+          const totalParticipants = storeEvents.reduce((total, event) => total + event.participants.length, 0);
+          
+          setStats({
+            eventsCount: storeEvents.length,
+            totalPlayers: totalParticipants,
+            wins: 0,
+            losses: 0,
+            winRate: 0,
+          });
+        } else {
+          // Player stats: calculate wins, losses, win rate from all events they participated in
+          const eventsQuery = query(collection(db, 'events'));
+          const eventsSnapshot = await getDocs(eventsQuery);
+          
+          let totalWins = 0;
+          let totalLosses = 0;
+          let eventsJoined = 0;
+          
+          eventsSnapshot.docs.forEach(doc => {
+            const event = doc.data() as League;
+            
+            // Check if player participated in this event
+            const isParticipant = event.participants.some(p => p.playerId === userProfile.id);
+            if (!isParticipant) return;
+            
+            eventsJoined++;
+            
+            // Find player's standing in this event
+            const playerStanding = event.standings.find(s => s.playerId === userProfile.id);
+            if (playerStanding) {
+              totalWins += playerStanding.wins;
+              totalLosses += playerStanding.losses;
+            }
+          });
+          
+          const totalMatches = totalWins + totalLosses;
+          const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
+          
+          setStats({
+            eventsCount: eventsJoined,
+            totalPlayers: 0,
+            wins: totalWins,
+            losses: totalLosses,
+            winRate: Math.round(winRate * 10) / 10, // Round to 1 decimal place
+          });
+        }
+      } catch (error) {
+        console.error('Error calculating stats:', error);
+        setStats({
+          eventsCount: 0,
+          totalPlayers: 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0,
+        });
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    calculateStats();
+  }, [userProfile]);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -175,7 +268,11 @@ export function Profile() {
             <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10">
               <div className="text-center">
                 <div className="text-lg font-bold text-blue-400">
-                  0
+                  {loadingStats ? (
+                    <div className="animate-pulse">...</div>
+                  ) : (
+                    stats.eventsCount
+                  )}
                 </div>
                 <div className="text-xs text-white/60">
                   {isStore ? 'Events Organized' : 'Events Joined'}
@@ -183,13 +280,45 @@ export function Profile() {
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-purple-400">
-                  {isStore ? '0' : '0%'}
+                  {loadingStats ? (
+                    <div className="animate-pulse">...</div>
+                  ) : isStore ? (
+                    stats.totalPlayers
+                  ) : (
+                    `${stats.winRate}%`
+                  )}
                 </div>
                 <div className="text-xs text-white/60">
                   {isStore ? 'Total Players' : 'Win Rate'}
                 </div>
               </div>
             </div>
+            
+            {/* Additional Stats for Players */}
+            {!isStore && (
+              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/10">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-400">
+                    {loadingStats ? (
+                      <div className="animate-pulse">...</div>
+                    ) : (
+                      stats.wins
+                    )}
+                  </div>
+                  <div className="text-xs text-white/60">Total Wins</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-red-400">
+                    {loadingStats ? (
+                      <div className="animate-pulse">...</div>
+                    ) : (
+                      stats.losses
+                    )}
+                  </div>
+                  <div className="text-xs text-white/60">Total Losses</div>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 

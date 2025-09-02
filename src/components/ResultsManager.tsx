@@ -22,6 +22,8 @@ interface FinalPlacement {
   playerName: string;
   finalRank: number;
   points: number;
+  wins: number;
+  losses: number;
 }
 
 export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProps) {
@@ -48,18 +50,23 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
   };
 
   const calculateStandings = (placements: FinalPlacement[]): Standing[] => {
-    const standings: Standing[] = placements.map(placement => ({
-      playerId: placement.playerId,
-      playerName: placement.playerName,
-      points: placement.points,
-      wins: 0, // Not applicable for final standings
-      losses: 0, // Not applicable for final standings
-      draws: 0, // Not applicable for final standings
-      matchesPlayed: 1, // Tournament completed
-      opponentWinPercentage: 0, // Not applicable
-      gameWinPercentage: 0, // Not applicable
-      rank: placement.finalRank,
-    }));
+    const standings: Standing[] = placements.map(placement => {
+      const totalMatches = placement.wins + placement.losses;
+      const winRate = totalMatches > 0 ? placement.wins / totalMatches : 0;
+      
+      return {
+        playerId: placement.playerId,
+        playerName: placement.playerName,
+        points: placement.points,
+        wins: placement.wins,
+        losses: placement.losses,
+        draws: 0, // No more draws in the system
+        matchesPlayed: totalMatches,
+        opponentWinPercentage: 0, // Not calculated for final standings
+        gameWinPercentage: winRate,
+        rank: placement.finalRank,
+      };
+    });
 
     // Sort by rank (ascending)
     standings.sort((a, b) => a.rank - b.rank);
@@ -123,6 +130,8 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
         playerName: '',
         finalRank: nextRank,
         points: calculatePointsFromRank(nextRank),
+        wins: 0,
+        losses: 0,
       }
     ]);
   };
@@ -192,17 +201,26 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                   <th className="text-left py-2 px-3 text-white/80">Rank</th>
                   <th className="text-left py-2 px-3 text-white/80">Player</th>
                   <th className="text-center py-2 px-3 text-white/80">Points</th>
+                  <th className="text-center py-2 px-3 text-white/80">W-L</th>
+                  <th className="text-center py-2 px-3 text-white/80">Win Rate</th>
                   <th className="text-center py-2 px-3 text-white/80">Bandai ID</th>
                 </tr>
               </thead>
               <tbody>
                 {event.standings.map((standing) => {
                   const participant = event.participants.find(p => p.playerId === standing.playerId);
+                  const winRate = standing.matchesPlayed > 0 ? ((standing.wins / standing.matchesPlayed) * 100).toFixed(1) : '0.0';
                   return (
                     <tr key={standing.playerId} className="border-b border-white/10 hover:bg-white/5">
                       <td className="py-2 px-3 font-bold text-white">#{standing.rank}</td>
                       <td className="py-2 px-3 text-white">{standing.playerName}</td>
                       <td className="py-2 px-3 text-center font-bold text-yellow-400">{standing.points}</td>
+                      <td className="py-2 px-3 text-center text-white/80">
+                        {standing.wins}-{standing.losses}
+                      </td>
+                      <td className="py-2 px-3 text-center text-green-400">
+                        {winRate}%
+                      </td>
                       <td className="py-2 px-3 text-center text-white/60">
                         {participant?.bandaiMembershipId || 'N/A'}
                       </td>
@@ -283,50 +301,91 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                 <div className="space-y-3">
                   {finalPlacements.map((placement, index) => (
                     <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-2">
-                          <label className="block text-sm text-white/80 mb-1">Rank</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={placement.finalRank}
-                            onChange={(e) => updatePlacement(index, 'finalRank', parseInt(e.target.value) || 1)}
-                            className="input-field w-full"
-                          />
-                        </div>
-                        
-                        <div className="col-span-5">
-                          <label className="block text-sm text-white/80 mb-1">Player</label>
-                          <select
-                            value={placement.playerId}
-                            onChange={(e) => updatePlacement(index, 'playerId', e.target.value)}
-                            className="input-field w-full"
-                          >
-                            <option value="">Select Player</option>
-                            {event.participants
-                              .filter(p => !finalPlacements.some((fp, fpIndex) => fp.playerId === p.playerId && fpIndex !== index))
-                              .map((participant) => (
-                                <option key={participant.playerId} value={participant.playerId}>
-                                  {participant.playerName}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-                        
-                        <div className="col-span-3">
-                          <label className="block text-sm text-white/80 mb-1">Points</label>
-                          <div className="text-lg font-bold text-yellow-400 py-2">
-                            {placement.points}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* First Row */}
+                        <div className="grid grid-cols-12 gap-3 items-end">
+                          <div className="col-span-2">
+                            <label className="block text-sm text-white/80 mb-1">Rank</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={placement.finalRank}
+                              onChange={(e) => updatePlacement(index, 'finalRank', parseInt(e.target.value) || 1)}
+                              className="input-field w-full"
+                            />
+                          </div>
+                          
+                          <div className="col-span-6">
+                            <label className="block text-sm text-white/80 mb-1">Player</label>
+                            <select
+                              value={placement.playerId}
+                              onChange={(e) => updatePlacement(index, 'playerId', e.target.value)}
+                              className="input-field w-full"
+                            >
+                              <option value="">Select Player</option>
+                              {event.participants
+                                .filter(p => !finalPlacements.some((fp, fpIndex) => fp.playerId === p.playerId && fpIndex !== index))
+                                .map((participant) => (
+                                  <option key={participant.playerId} value={participant.playerId}>
+                                    {participant.playerName}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                          
+                          <div className="col-span-3">
+                            <label className="block text-sm text-white/80 mb-1">Points</label>
+                            <div className="text-lg font-bold text-yellow-400 py-2 px-3 bg-white/5 rounded border border-white/10 text-center">
+                              {placement.points}
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-1">
+                            <button
+                              onClick={() => removePlacement(index)}
+                              className="w-full btn-secondary text-red-400 hover:text-red-300 p-2"
+                              title="Remove player"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
-                        
-                        <div className="col-span-2">
-                          <button
-                            onClick={() => removePlacement(index)}
-                            className="w-full btn-secondary text-red-400 hover:text-red-300"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+
+                        {/* Second Row - Statistics */}
+                        <div className="grid grid-cols-12 gap-3 items-end">
+                          <div className="col-span-4">
+                            <label className="block text-sm text-white/80 mb-1">Wins</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={placement.wins}
+                              onChange={(e) => updatePlacement(index, 'wins', parseInt(e.target.value) || 0)}
+                              className="input-field w-full"
+                              placeholder="0"
+                            />
+                          </div>
+                          
+                          <div className="col-span-4">
+                            <label className="block text-sm text-white/80 mb-1">Losses</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={placement.losses}
+                              onChange={(e) => updatePlacement(index, 'losses', parseInt(e.target.value) || 0)}
+                              className="input-field w-full"
+                              placeholder="0"
+                            />
+                          </div>
+                          
+                          <div className="col-span-4">
+                            <label className="block text-sm text-white/80 mb-1">Win Rate</label>
+                            <div className="text-sm font-medium text-green-400 py-2 px-3 bg-white/5 rounded border border-white/10 text-center">
+                              {placement.wins + placement.losses > 0 
+                                ? `${((placement.wins / (placement.wins + placement.losses)) * 100).toFixed(1)}%`
+                                : '0.0%'
+                              }
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
