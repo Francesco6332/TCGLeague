@@ -19,6 +19,10 @@ dist-ssr
 .env.test.local
 .env.production.local
 
+# App Updates (internal only)
+app-updates.json
+public/app-updates.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -20,6 +20,7 @@ import {
 import type { League, News } from '../types';
 import { useGeolocation, calculateDistance } from '../hooks/useGeolocation';
 import { getNews, clearNewsCache } from '../services/newsService';
+import { getAppUpdates, clearAppUpdatesCache, getUpdateTypeColor, getUpdateTypeIcon, type AppUpdate } from '../services/appUpdatesService';
 
 interface LeagueWithDistance extends League {
   distance?: number | null;
@@ -29,6 +30,7 @@ export function Home() {
   const { userProfile } = useAuth();
   const [nearbyEvents, setNearbyEvents] = useState<LeagueWithDistance[]>([]);
   const [news, setNews] = useState<News[]>([]);
+  const [appUpdates, setAppUpdates] = useState<AppUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const { latitude, longitude, error: locationError, loading: locationLoading } = useGeolocation();
 
@@ -95,6 +97,15 @@ export function Home() {
         } catch (newsError) {
           console.error('Error fetching news:', newsError);
           setNews([]);
+        }
+
+        // Fetch app updates
+        try {
+          const updatesData = await getAppUpdates(3);
+          setAppUpdates(updatesData);
+        } catch (updatesError) {
+          console.error('Error fetching app updates:', updatesError);
+          setAppUpdates([]);
         }
       } catch (error) {
         
@@ -384,6 +395,104 @@ export function Home() {
                     </a>
                   </motion.div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* App Updates Section */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                <RefreshCw className="h-5 w-5 text-green-400" />
+                <span>App Updates</span>
+              </h3>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={async () => {
+                    clearAppUpdatesCache();
+                    const updatesData = await getAppUpdates(3);
+                    setAppUpdates(updatesData);
+                  }}
+                  className="text-green-400 hover:text-green-300 text-sm flex items-center space-x-1"
+                  title="Refresh updates"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+                <span className="text-green-400 text-xs">•</span>
+                <span className="text-green-400 text-xs">Internal</span>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-16 bg-white/10 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {appUpdates.map((update) => (
+                  <motion.div
+                    key={update.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="block border-l-2 border-green-400 pl-3 hover:border-green-300 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="text-sm font-medium">{getUpdateTypeIcon(update.type)}</span>
+                            <h4 className="font-medium text-white text-sm line-clamp-1 group-hover:text-green-400 transition-colors">
+                              {update.title}
+                            </h4>
+                            <span className="text-xs text-white/40 bg-white/10 px-2 py-0.5 rounded">
+                              v{update.version}
+                            </span>
+                          </div>
+                          <p className="text-xs text-white/50 mb-2 line-clamp-1">
+                            {update.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-white/60">
+                            {formatDate(new Date(update.date))}
+                          </span>
+                          <span className="text-xs text-green-400 font-medium">
+                            {update.author}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span 
+                            className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                            style={{ 
+                              backgroundColor: `${getUpdateTypeColor(update.type)}20`,
+                              color: getUpdateTypeColor(update.type)
+                            }}
+                          >
+                            {update.type}
+                          </span>
+                          {update.priority === 'high' && (
+                            <span className="bg-red-400/20 text-red-400 text-xs px-2 py-0.5 rounded-full">
+                              Priority
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {appUpdates.length === 0 && (
+                  <div className="text-center py-6">
+                    <RefreshCw className="h-8 w-8 text-white/40 mx-auto mb-2" />
+                    <p className="text-white/60 text-sm">No recent updates</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
