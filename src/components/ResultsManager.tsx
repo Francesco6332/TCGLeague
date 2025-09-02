@@ -10,7 +10,7 @@ import {
   Users,
   Target
 } from 'lucide-react';
-import type { League, Standing, Match } from '../types';
+import type { League, Standing } from '../types';
 
 interface ResultsManagerProps {
   event: League;
