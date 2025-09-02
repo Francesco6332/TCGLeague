@@ -44,7 +44,7 @@ export class ImageService {
    * @returns Image URL for the card
    */
   static getCardImageUrlWithFormat(cardNumber: string, format: 'png' | 'jpg' = 'png'): string {
-    return this.getCardImageUrl(cardNumber);
+   return this.getCardImageUrl(cardNumber) + `.${format}`;
   }
 
   /**
