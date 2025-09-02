@@ -17,228 +17,164 @@ interface ResultsManagerProps {
   onStandingsUpdated: (updatedEvent: League) => void;
 }
 
-interface MatchResult {
-  player1Id: string;
-  player1Name: string;
-  player2Id: string;
-  player2Name: string;
-  player1Score: number;
-  player2Score: number;
-  winnerId?: string;
-  isDraw: boolean;
+interface FinalPlacement {
+  playerId: string;
+  playerName: string;
+  finalRank: number;
+  points: number;
 }
 
 export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProps) {
-  const [showAddMatch, setShowAddMatch] = useState(false);
+  const [showAddStandings, setShowAddStandings] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [matchResult, setMatchResult] = useState<MatchResult>({
-    player1Id: '',
-    player1Name: '',
-    player2Id: '',
-    player2Name: '',
-    player1Score: 0,
-    player2Score: 0,
-    winnerId: undefined,
-    isDraw: false,
-  });
+  const [finalPlacements, setFinalPlacements] = useState<FinalPlacement[]>([]);
 
-  const calculateStandings = (matches: Match[], participants: any[]): Standing[] => {
-    const standingsMap = new Map<string, Standing>();
+  const calculatePointsFromRank = (rank: number): number => {
+    // Points system for top 10 finishers
+    const pointsSystem: { [key: number]: number } = {
+      1: 25,   // 1st place
+      2: 18,   // 2nd place  
+      3: 15,   // 3rd place
+      4: 12,   // 4th place
+      5: 10,   // 5th place
+      6: 8,    // 6th place
+      7: 6,    // 7th place
+      8: 4,    // 8th place
+      9: 2,    // 9th place
+      10: 1,   // 10th place
+    };
     
-    // Initialize standings for all participants
-    participants.forEach(participant => {
-      standingsMap.set(participant.playerId, {
-        playerId: participant.playerId,
-        playerName: participant.playerName,
-        points: 0,
-        wins: 0,
-        losses: 0,
-        draws: 0,
-        matchesPlayed: 0,
-        opponentWinPercentage: 0,
-        gameWinPercentage: 0,
-        rank: 0,
-      });
-    });
+    return pointsSystem[rank] || 0; // 0 points for 11th place and below
+  };
 
-    // Calculate wins, losses, draws, and points
-    matches.forEach(match => {
-      if (!match.isCompleted) return;
+  const calculateStandings = (placements: FinalPlacement[]): Standing[] => {
+    const standings: Standing[] = placements.map(placement => ({
+      playerId: placement.playerId,
+      playerName: placement.playerName,
+      points: placement.points,
+      wins: 0, // Not applicable for final standings
+      losses: 0, // Not applicable for final standings
+      draws: 0, // Not applicable for final standings
+      matchesPlayed: 1, // Tournament completed
+      opponentWinPercentage: 0, // Not applicable
+      gameWinPercentage: 0, // Not applicable
+      rank: placement.finalRank,
+    }));
 
-      const player1Standing = standingsMap.get(match.player1Id);
-      const player2Standing = standingsMap.get(match.player2Id);
-
-      if (!player1Standing || !player2Standing) return;
-
-      player1Standing.matchesPlayed++;
-      player2Standing.matchesPlayed++;
-
-      if (match.isDraw) {
-        player1Standing.draws++;
-        player2Standing.draws++;
-        player1Standing.points += 1;
-        player2Standing.points += 1;
-      } else if (match.winnerId === match.player1Id) {
-        player1Standing.wins++;
-        player2Standing.losses++;
-        player1Standing.points += 3;
-      } else if (match.winnerId === match.player2Id) {
-        player2Standing.wins++;
-        player1Standing.losses++;
-        player2Standing.points += 3;
-      }
-    });
-
-    // Calculate win percentages and convert to array
-    const standings = Array.from(standingsMap.values()).map(standing => {
-      const totalMatches = standing.matchesPlayed;
-      standing.gameWinPercentage = totalMatches > 0 ? standing.wins / totalMatches : 0;
-      return standing;
-    });
-
-    // Sort by points (descending), then by wins (descending)
-    standings.sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      return b.wins - a.wins;
-    });
-
-    // Assign ranks
-    standings.forEach((standing, index) => {
-      standing.rank = index + 1;
-    });
+    // Sort by rank (ascending)
+    standings.sort((a, b) => a.rank - b.rank);
 
     return standings;
   };
 
-  const handleAddMatch = async () => {
-    if (!matchResult.player1Id || !matchResult.player2Id) {
-      alert('Please select both players');
+  const handleSubmitStandings = async () => {
+    if (finalPlacements.length === 0) {
+      alert('Please add at least one placement');
       return;
     }
 
-    if (matchResult.player1Id === matchResult.player2Id) {
-      alert('Please select different players');
+    // Validate no duplicate ranks
+    const ranks = finalPlacements.map(p => p.finalRank);
+    const uniqueRanks = new Set(ranks);
+    if (ranks.length !== uniqueRanks.size) {
+      alert('Each player must have a unique rank');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Determine winner
-      let winnerId: string | undefined;
-      let isDraw = false;
-
-      if (matchResult.player1Score > matchResult.player2Score) {
-        winnerId = matchResult.player1Id;
-      } else if (matchResult.player2Score > matchResult.player1Score) {
-        winnerId = matchResult.player2Id;
-      } else {
-        isDraw = true;
-      }
-
-      // Create new match
-      const newMatch: Match = {
-        id: `match_${Date.now()}`,
-        player1Id: matchResult.player1Id,
-        player2Id: matchResult.player2Id,
-        player1Name: matchResult.player1Name,
-        player2Name: matchResult.player2Name,
-        player1Score: matchResult.player1Score,
-        player2Score: matchResult.player2Score,
-        winnerId,
-        isDraw,
-        isCompleted: true,
-        table: 1,
-      };
-
-      // Update matches in the first round (create if doesn't exist)
-      const updatedRounds = [...event.rounds];
-      if (updatedRounds.length === 0) {
-        updatedRounds.push({
-          roundNumber: 1,
-          matches: [newMatch],
-          isCompleted: false,
-        });
-      } else {
-        updatedRounds[0].matches.push(newMatch);
-      }
-
-      // Calculate new standings
-      const allMatches = updatedRounds.flatMap(round => round.matches);
-      const newStandings = calculateStandings(allMatches, event.participants);
+      // Calculate new standings based on final placements
+      const newStandings = calculateStandings(finalPlacements);
 
       // Update event in Firestore
       await updateDoc(doc(db, 'events', event.id), {
-        rounds: updatedRounds,
         standings: newStandings,
+        status: 'completed', // Mark tournament as completed
         updatedAt: new Date(),
       });
 
       // Update local state
       const updatedEvent = {
         ...event,
-        rounds: updatedRounds,
         standings: newStandings,
+        status: 'completed' as const,
       };
 
       onStandingsUpdated(updatedEvent);
 
-      // Reset form
-      setMatchResult({
-        player1Id: '',
-        player1Name: '',
-        player2Id: '',
-        player2Name: '',
-        player1Score: 0,
-        player2Score: 0,
-        winnerId: undefined,
-        isDraw: false,
-      });
-
-      setShowAddMatch(false);
-      console.log('✅ Match result added and standings updated');
+      setShowAddStandings(false);
+      setFinalPlacements([]);
+      console.log('✅ Final standings updated');
     } catch (error) {
-      console.error('❌ Error adding match result:', error);
-      alert('Failed to add match result. Please try again.');
+      console.error('❌ Error updating standings:', error);
+      alert('Failed to update standings. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePlayerSelect = (playerNumber: 1 | 2, playerId: string) => {
-    const participant = event.participants.find(p => p.playerId === playerId);
-    if (!participant) return;
-
-    if (playerNumber === 1) {
-      setMatchResult(prev => ({
-        ...prev,
-        player1Id: playerId,
-        player1Name: participant.playerName,
-      }));
-    } else {
-      setMatchResult(prev => ({
-        ...prev,
-        player2Id: playerId,
-        player2Name: participant.playerName,
-      }));
-    }
+  const addPlacement = () => {
+    const nextRank = finalPlacements.length + 1;
+    setFinalPlacements(prev => [
+      ...prev,
+      {
+        playerId: '',
+        playerName: '',
+        finalRank: nextRank,
+        points: calculatePointsFromRank(nextRank),
+      }
+    ]);
   };
+
+  const updatePlacement = (index: number, field: keyof FinalPlacement, value: string | number) => {
+    setFinalPlacements(prev => {
+      const updated = [...prev];
+      if (field === 'playerId' && typeof value === 'string') {
+        const participant = event.participants.find(p => p.playerId === value);
+        if (participant) {
+          updated[index] = {
+            ...updated[index],
+            playerId: value,
+            playerName: participant.playerName,
+          };
+        }
+      } else if (field === 'finalRank' && typeof value === 'number') {
+        updated[index] = {
+          ...updated[index],
+          finalRank: value,
+          points: calculatePointsFromRank(value),
+        };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return updated;
+    });
+  };
+
+  const removePlacement = (index: number) => {
+    setFinalPlacements(prev => prev.filter((_, i) => i !== index));
+  };
+
+
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-semibold text-white">Results for {event.name}</h3>
-          <p className="text-white/60 text-sm">Add match results to update standings</p>
+          <h3 className="text-xl font-semibold text-white">Final Standings for {event.name}</h3>
+          <p className="text-white/60 text-sm">Input final tournament rankings from external app</p>
         </div>
-        <button
-          onClick={() => setShowAddMatch(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Match Result</span>
-        </button>
+        {event.status !== 'completed' && (
+          <button
+            onClick={() => setShowAddStandings(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Trophy className="h-4 w-4" />
+            <span>Input Final Rankings</span>
+          </button>
+        )}
       </div>
 
       {/* Current Standings */}
@@ -256,76 +192,75 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
                   <th className="text-left py-2 px-3 text-white/80">Rank</th>
                   <th className="text-left py-2 px-3 text-white/80">Player</th>
                   <th className="text-center py-2 px-3 text-white/80">Points</th>
-                  <th className="text-center py-2 px-3 text-white/80">W-L-D</th>
-                  <th className="text-center py-2 px-3 text-white/80">Matches</th>
+                  <th className="text-center py-2 px-3 text-white/80">Bandai ID</th>
                 </tr>
               </thead>
               <tbody>
-                {event.standings.map((standing) => (
-                  <tr key={standing.playerId} className="border-b border-white/10 hover:bg-white/5">
-                    <td className="py-2 px-3 font-bold text-white">#{standing.rank}</td>
-                    <td className="py-2 px-3 text-white">{standing.playerName}</td>
-                    <td className="py-2 px-3 text-center font-bold text-blue-400">{standing.points}</td>
-                    <td className="py-2 px-3 text-center text-white/80">
-                      {standing.wins}-{standing.losses}-{standing.draws}
-                    </td>
-                    <td className="py-2 px-3 text-center text-white/60">{standing.matchesPlayed}</td>
-                  </tr>
-                ))}
+                {event.standings.map((standing) => {
+                  const participant = event.participants.find(p => p.playerId === standing.playerId);
+                  return (
+                    <tr key={standing.playerId} className="border-b border-white/10 hover:bg-white/5">
+                      <td className="py-2 px-3 font-bold text-white">#{standing.rank}</td>
+                      <td className="py-2 px-3 text-white">{standing.playerName}</td>
+                      <td className="py-2 px-3 text-center font-bold text-yellow-400">{standing.points}</td>
+                      <td className="py-2 px-3 text-center text-white/60">
+                        {participant?.bandaiMembershipId || 'N/A'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Recent Matches */}
-      {event.rounds.length > 0 && event.rounds[0].matches.length > 0 && (
-        <div className="card p-6">
-          <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-            <Target className="h-5 w-5 text-green-400" />
-            <span>Recent Matches</span>
-          </h4>
-          
-          <div className="space-y-3">
-            {event.rounds[0].matches.slice(-5).map((match) => (
-              <div key={match.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-white font-medium">{match.player1Name}</span>
-                    <span className="text-white/60">vs</span>
-                    <span className="text-white font-medium">{match.player2Name}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-white font-bold">
-                      {match.player1Score} - {match.player2Score}
-                    </span>
-                    {match.isDraw ? (
-                      <span className="px-2 py-1 bg-gray-500/20 text-gray-300 rounded text-xs">Draw</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded text-xs">
-                        {match.winnerId === match.player1Id ? match.player1Name : match.player2Name} wins
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+      {/* Points System Info */}
+      <div className="card p-6">
+        <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+          <Target className="h-5 w-5 text-green-400" />
+          <span>Points System</span>
+        </h4>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-400">25</div>
+            <div className="text-white/60">1st Place</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-300">18</div>
+            <div className="text-white/60">2nd Place</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-400">15</div>
+            <div className="text-white/60">3rd Place</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-blue-400">12...1</div>
+            <div className="text-white/60">4th-10th</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-white/40">0</div>
+            <div className="text-white/60">11th+</div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Add Match Modal */}
-      {showAddMatch && (
+      {/* Add Final Rankings Modal */}
+      {showAddStandings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-800 rounded-lg p-6 w-full max-w-md border border-white/20"
+            className="bg-slate-800 rounded-lg p-6 w-full max-w-4xl border border-white/20 max-h-[80vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Add Match Result</h3>
+              <h3 className="text-xl font-semibold text-white">Input Final Tournament Rankings</h3>
               <button
-                onClick={() => setShowAddMatch(false)}
+                onClick={() => {
+                  setShowAddStandings(false);
+                  setFinalPlacements([]);
+                }}
                 className="text-white/60 hover:text-white"
               >
                 <X className="h-5 w-5" />
@@ -333,83 +268,97 @@ export function ResultsManager({ event, onStandingsUpdated }: ResultsManagerProp
             </div>
 
             <div className="space-y-4">
-              {/* Player 1 */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Player 1</label>
-                <select
-                  value={matchResult.player1Id}
-                  onChange={(e) => handlePlayerSelect(1, e.target.value)}
-                  className="input-field w-full"
+              <div className="flex items-center justify-between">
+                <p className="text-white/70">Add players in their final ranking order</p>
+                <button
+                  onClick={addPlacement}
+                  className="btn-secondary flex items-center space-x-2"
                 >
-                  <option value="">Select Player 1</option>
-                  {event.participants.map((participant) => (
-                    <option key={participant.playerId} value={participant.playerId}>
-                      {participant.playerName}
-                    </option>
-                  ))}
-                </select>
+                  <Plus className="h-4 w-4" />
+                  <span>Add Player</span>
+                </button>
               </div>
 
-              {/* Player 2 */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Player 2</label>
-                <select
-                  value={matchResult.player2Id}
-                  onChange={(e) => handlePlayerSelect(2, e.target.value)}
-                  className="input-field w-full"
-                >
-                  <option value="">Select Player 2</option>
-                  {event.participants.map((participant) => (
-                    <option key={participant.playerId} value={participant.playerId}>
-                      {participant.playerName}
-                    </option>
+              {finalPlacements.length > 0 && (
+                <div className="space-y-3">
+                  {finalPlacements.map((placement, index) => (
+                    <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        <div className="col-span-2">
+                          <label className="block text-sm text-white/80 mb-1">Rank</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={placement.finalRank}
+                            onChange={(e) => updatePlacement(index, 'finalRank', parseInt(e.target.value) || 1)}
+                            className="input-field w-full"
+                          />
+                        </div>
+                        
+                        <div className="col-span-5">
+                          <label className="block text-sm text-white/80 mb-1">Player</label>
+                          <select
+                            value={placement.playerId}
+                            onChange={(e) => updatePlacement(index, 'playerId', e.target.value)}
+                            className="input-field w-full"
+                          >
+                            <option value="">Select Player</option>
+                            {event.participants
+                              .filter(p => !finalPlacements.some((fp, fpIndex) => fp.playerId === p.playerId && fpIndex !== index))
+                              .map((participant) => (
+                                <option key={participant.playerId} value={participant.playerId}>
+                                  {participant.playerName}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                        
+                        <div className="col-span-3">
+                          <label className="block text-sm text-white/80 mb-1">Points</label>
+                          <div className="text-lg font-bold text-yellow-400 py-2">
+                            {placement.points}
+                          </div>
+                        </div>
+                        
+                        <div className="col-span-2">
+                          <button
+                            onClick={() => removePlacement(index)}
+                            className="w-full btn-secondary text-red-400 hover:text-red-300"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </select>
-              </div>
+                </div>
+              )}
 
-              {/* Scores */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    {matchResult.player1Name || 'Player 1'} Score
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={matchResult.player1Score}
-                    onChange={(e) => setMatchResult(prev => ({ ...prev, player1Score: parseInt(e.target.value) || 0 }))}
-                    className="input-field w-full"
-                  />
+              {finalPlacements.length === 0 && (
+                <div className="text-center py-8 text-white/60">
+                  <Trophy className="h-12 w-12 mx-auto mb-4 text-white/40" />
+                  <p>Click "Add Player" to start adding final rankings</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    {matchResult.player2Name || 'Player 2'} Score
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={matchResult.player2Score}
-                    onChange={(e) => setMatchResult(prev => ({ ...prev, player2Score: parseInt(e.target.value) || 0 }))}
-                    className="input-field w-full"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={() => setShowAddMatch(false)}
+                onClick={() => {
+                  setShowAddStandings(false);
+                  setFinalPlacements([]);
+                }}
                 className="flex-1 btn-secondary"
               >
                 Cancel
               </button>
               <button
-                onClick={handleAddMatch}
-                disabled={loading}
+                onClick={handleSubmitStandings}
+                disabled={loading || finalPlacements.length === 0}
                 className="flex-1 btn-primary flex items-center justify-center space-x-2"
               >
                 <Save className="h-4 w-4" />
-                <span>{loading ? 'Saving...' : 'Save Result'}</span>
+                <span>{loading ? 'Saving...' : 'Save Final Rankings'}</span>
               </button>
             </div>
           </motion.div>
