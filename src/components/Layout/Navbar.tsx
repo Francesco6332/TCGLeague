@@ -9,7 +9,8 @@ import {
   Layers,
   Menu,
   X,
-  Settings
+  Settings,
+  Newspaper
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -30,7 +31,8 @@ export function Navbar() {
 
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
-    { path: '/events', label: 'My Events', icon: Calendar },
+    { path: '/events', label: 'Events', icon: Calendar },
+    { path: '/news', label: 'News', icon: Newspaper },
     ...(userProfile?.userType === 'store' ? [{ path: '/dashboard', label: 'Dashboard', icon: Settings }] : []),
     { path: '/deck-builder', label: 'Deck Builder', icon: Layers },
     { path: '/profile', label: 'Profile', icon: User },

@@ -14,10 +14,12 @@ import {
   Newspaper,
   ExternalLink,
   Navigation,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import type { League, News } from '../types';
 import { useGeolocation, calculateDistance } from '../hooks/useGeolocation';
+import { getNews, clearNewsCache } from '../services/newsService';
 
 interface LeagueWithDistance extends League {
   distance?: number | null;
@@ -86,21 +88,12 @@ export function Home() {
         
         setNearbyEvents(events);
 
-        // Fetch news - simplified query to avoid index issues
+        // Fetch news from external sources
         try {
-          const newsQuery = query(
-            collection(db, 'news'),
-            limit(5)
-          );
-          const newsSnapshot = await getDocs(newsQuery);
-          const newsData = newsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            publishedAt: doc.data().publishedAt?.toDate() || new Date(),
-          })) as News[];
-          
+          const newsData = await getNews(5);
           setNews(newsData);
         } catch (newsError) {
+          console.error('Error fetching news:', newsError);
           setNews([]);
         }
       } catch (error) {
@@ -315,10 +308,27 @@ export function Home() {
                 <Newspaper className="h-5 w-5 text-purple-400" />
                 <span>Latest News</span>
               </h3>
-              <button className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1">
-                <span>More</span>
-                <ExternalLink className="h-3 w-3" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={async () => {
+                    clearNewsCache();
+                    const newsData = await getNews(5);
+                    setNews(newsData);
+                  }}
+                  className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1"
+                  title="Refresh news"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+                <span className="text-purple-400 text-xs">•</span>
+                <Link 
+                  to="/news" 
+                  className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1"
+                >
+                  <span>View All</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
             </div>
 
             {loading ? (
@@ -336,21 +346,42 @@ export function Home() {
                     key={article.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="border-l-2 border-purple-400 pl-3 hover:border-purple-300 transition-colors cursor-pointer"
+                    className="group cursor-pointer"
                   >
-                    <h4 className="font-medium text-white text-sm line-clamp-2 hover:text-purple-400 transition-colors">
-                      {article.title}
-                    </h4>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="text-xs text-white/60">
-                        {formatDate(article.publishedAt)}
-                      </span>
-                      {article.isOfficial && (
-                        <span className="bg-yellow-400/20 text-yellow-400 text-xs px-2 py-0.5 rounded">
-                          Official
-                        </span>
-                      )}
-                    </div>
+                    <a 
+                      href={article.sourceUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block border-l-2 border-purple-400 pl-3 hover:border-purple-300 transition-colors"
+                    >
+                      <h4 className="font-medium text-white text-sm line-clamp-2 group-hover:text-purple-400 transition-colors">
+                        {article.title}
+                      </h4>
+                      <p className="text-xs text-white/50 mt-1 line-clamp-1">
+                        {article.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-white/60">
+                            {formatDate(article.publishedAt)}
+                          </span>
+                          <span className="text-xs text-purple-400 font-medium">
+                            {article.source}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          {article.isOfficial && (
+                            <span className="bg-yellow-400/20 text-yellow-400 text-xs px-2 py-0.5 rounded">
+                              Official
+                            </span>
+                          )}
+                          <span className="bg-blue-400/20 text-blue-400 text-xs px-2 py-0.5 rounded">
+                            {article.category}
+                          </span>
+                          <ExternalLink className="h-3 w-3 text-white/40 group-hover:text-purple-400 transition-colors" />
+                        </div>
+                      </div>
+                    </a>
                   </motion.div>
                 ))}
               </div>

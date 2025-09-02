@@ -156,10 +156,14 @@ export type Rarity = 'C' | 'UC' | 'R' | 'SR' | 'SEC' | 'L' | 'P';
 export interface News {
   id: string;
   title: string;
+  excerpt: string;
   content: string;
   imageUrl?: string;
   author: string;
   publishedAt: Date;
+  source: string;
+  sourceUrl: string;
+  category: string;
   tags: string[];
   isOfficial: boolean;
 }

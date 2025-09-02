@@ -6,6 +6,7 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { Home } from './pages/Home';
 import { Events } from './pages/Events';
+import { News } from './pages/News';
 import { Profile } from './pages/Profile';
 import { DeckBuilder } from './pages/DeckBuilder';
 import { EventDetail } from './pages/EventDetail';
@@ -93,6 +94,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <EventDetail />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/news"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <News />
             </Layout>
           </ProtectedRoute>
         }
