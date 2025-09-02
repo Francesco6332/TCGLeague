@@ -166,10 +166,14 @@ export function Home() {
                   <div className="animate-spin h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
                 )}
                 {locationError && (
-                  <AlertCircle className="h-4 w-4 text-yellow-400" title={locationError} />
+                  <span title={locationError}>
+                    <AlertCircle className="h-4 w-4 text-yellow-400" />
+                  </span>
                 )}
                 {latitude && longitude && !locationLoading && (
-                  <Navigation className="h-4 w-4 text-green-400" title="Location enabled" />
+                  <span title="Location enabled">
+                    <Navigation className="h-4 w-4 text-green-400" />
+                  </span>
                 )}
               </h2>
               <button className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1">
