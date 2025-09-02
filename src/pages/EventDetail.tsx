@@ -191,7 +191,7 @@ export function EventDetail() {
           {userProfile?.userType === 'player' && event.status === 'upcoming' && (
             <button 
               onClick={handleRegisterForEvent}
-              disabled={isUserRegistered || registering || (event.maxParticipants && event.participants.length >= event.maxParticipants)}
+              disabled={isUserRegistered || registering || (event.maxParticipants != null && event.participants.length >= event.maxParticipants)}
               className={`btn-primary flex items-center space-x-2 ${
                 isUserRegistered ? 'opacity-50 cursor-not-allowed' : ''
               }`}
