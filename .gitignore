@@ -23,6 +23,10 @@ dist-ssr
 app-updates.json
 public/app-updates.json
 
+# Database files (internal only)
+supabase-schema.sql
+card-data.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

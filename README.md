@@ -14,11 +14,12 @@ A modern, feature-rich tournament management platform for One Piece TCG, similar
 - Multiple tournament formats (Standard, Limited, Championship)
 - Participant management
 
-### 🃏 Deck Builder
-- Build and manage One Piece TCG decks
-- Import/export deck lists
-- Visual deck builder interface
-- Leader and card database integration
+### 🃏 Advanced Deck Builder
+- **Real One Piece TCG Cards** from all expansions (OP01-OP12)
+- **Supabase-powered card database** with advanced search
+- **Visual deck construction** with filtering and real-time updates
+- **Complete card metadata** including effects, rarities, and costs
+- **Deck management** with format validation and sharing
 
 ### 📱 Modern UI/UX
 - Responsive design for all devices
@@ -36,83 +37,11 @@ A modern, feature-rich tournament management platform for One Piece TCG, similar
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS + Custom Components
-- **Backend**: Firebase (Authentication, Firestore, Storage)
+- **Backend**: Firebase (Authentication, Firestore) + Supabase (Card Database)
+- **Database**: PostgreSQL (Supabase) for card data, Firestore for app data
 - **Deployment**: Vercel
 - **Icons**: Lucide React
 - **Animations**: Framer Motion
-
-## Getting Started
-
-### Prerequisites
-- Node.js 16+ 
-- Firebase project
-- Vercel account (for deployment)
-
-### Installation
-
-1. Clone the repository:
-\`\`\`bash
-git clone <repository-url>
-cd tcgleague
-\`\`\`
-
-2. Install dependencies:
-\`\`\`bash
-npm install
-\`\`\`
-
-3. Set up environment variables:
-\`\`\`bash
-cp env.example .env
-\`\`\`
-
-4. Update `.env` with your Firebase configuration:
-\`\`\`env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-\`\`\`
-
-⚠️ **IMPORTANT**: Never commit the `.env` file to Git. It contains sensitive Firebase configuration and is already included in `.gitignore`.
-
-5. Start the development server:
-\`\`\`bash
-npm run dev
-\`\`\`
-
-### Firebase Setup
-
-1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com)
-2. Enable Authentication with Email/Password
-3. Create a Firestore database
-4. Set up Firebase Storage
-5. Add your app to Firebase and copy the configuration
-
-### Deployment
-
-The app is configured for Vercel deployment:
-
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
-
-## Project Structure
-
-\`\`\`
-src/
-├── components/          # Reusable UI components
-│   └── Layout/         # Layout components (Navbar, etc.)
-├── contexts/           # React contexts (Auth, etc.)
-├── lib/               # Utilities and configurations
-├── pages/             # Page components
-│   ├── auth/          # Authentication pages
-│   └── ...           # Other pages
-├── types/             # TypeScript type definitions
-└── App.tsx           # Main app component
-\`\`\`
 
 ## Features Roadmap
 
@@ -149,9 +78,7 @@ src/
 
 - All passwords are encrypted using Firebase Auth
 - No sensitive data is stored in the repository
-- Environment variables are used for configuration
 - Firebase security rules protect user data
-- **`.env` file is git-ignored** - never commit Firebase credentials
 - **Public repository safe** - no API keys or secrets in source code
 - Production deployment uses environment variables from hosting platform
 
