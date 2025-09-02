@@ -16,7 +16,7 @@ A modern, feature-rich tournament management platform for One Piece TCG, similar
 
 ### 🃏 Advanced Deck Builder
 - **Real One Piece TCG Cards** from all expansions (OP01-OP12)
-- **Supabase-powered card database** with advanced search
+- **Local card database** with advanced search and filtering
 - **Visual deck construction** with filtering and real-time updates
 - **Complete card metadata** including effects, rarities, and costs
 - **Deck management** with format validation and sharing
@@ -37,8 +37,8 @@ A modern, feature-rich tournament management platform for One Piece TCG, similar
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS + Custom Components
-- **Backend**: Firebase (Authentication, Firestore) + Supabase (Card Database)
-- **Database**: PostgreSQL (Supabase) for card data, Firestore for app data
+- **Backend**: Firebase (Authentication, Firestore) + Local Storage (Card Database)
+- **Database**: LocalStorage for card data, Firestore for app data
 - **Deployment**: Vercel
 - **Icons**: Lucide React
 - **Animations**: Framer Motion

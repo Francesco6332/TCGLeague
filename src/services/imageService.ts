@@ -23,9 +23,8 @@ export class ImageService {
         return `/images/card-placeholder.svg`;
       }
 
-      // Try PNG first, then JPG (since we have mixed formats)
-      // The CardImage component will handle fallback if the first format fails
-      return `/images/cards/${setCode}/${cardNumber}.png`;
+      // Images are in /images/{SET}/{SET}/ structure
+      return `/images/${setCode}/${setCode}/${cardNumber}.png`;
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return `/images/card-placeholder.svg`;
@@ -50,7 +49,7 @@ export class ImageService {
         return `/images/card-placeholder.svg`;
       }
 
-      return `/images/cards/${setCode}/${cardNumber}.${format}`;
+      return `/images/${setCode}/${setCode}/${cardNumber}.${format}`;
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return `/images/card-placeholder.svg`;
@@ -85,15 +84,8 @@ export class ImageService {
     
     // List of sets that should have images
     const availableSets = [
-      // Booster Sets
-      'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10',
-      'OP11', 'OP12', 'OP13',
-      // Starter Decks
-      'ST01', 'ST02', 'ST03', 'ST04', 'ST05', 'ST06', 'ST07', 'ST08', 'ST09', 'ST10',
-      'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST16', 'ST17', 'ST18', 'ST19', 'ST20',
-      'ST21', 'ST22', 'ST23', 'ST24', 'ST25', 'ST26', 'ST27', 'ST28',
-      // Premium and Extra Sets
-      'PRB01', 'PRB02', 'EB1', 'EB02', 'EB03'
+      // Currently available sets
+      'OP01', 'EB1', 'EB02'
     ];
     
     return availableSets.includes(setCode);

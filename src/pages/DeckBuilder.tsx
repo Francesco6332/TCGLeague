@@ -7,12 +7,11 @@ import {
   Eye, 
   Trash2,
   Layers,
-  Users,
   X,
   CreditCard
 } from 'lucide-react';
 import { CardImage } from '../components/ui/CardImage';
-import { deckService, cardService, type Deck, type Card } from '../lib/supabase';
+import { deckService, cardService, type Deck, type Card } from '../services/localCardService';
 
 interface DeckWithCardCount extends Deck {
   total_cards: number;
@@ -41,7 +40,7 @@ export function DeckBuilder() {
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState<'Standard' | 'Limited' | 'Championship' | 'Casual'>('Standard');
 
-  const sets = ['OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10', 'OP11', 'OP12'];
+  const sets = ['OP01', 'EB1', 'EB02'];
   const colors = ['Red', 'Blue', 'Green', 'Purple', 'Yellow', 'Black', 'Colorless'];
   const types = ['Leader', 'Character', 'Event', 'Stage', 'DON!!'];
   const rarities = ['C', 'UC', 'R', 'SR', 'SEC', 'L', 'P'];
@@ -120,8 +119,7 @@ export function DeckBuilder() {
       const newDeck = await deckService.createDeck({
         user_id: userProfile.id,
         name: newDeckName.trim(),
-        format: newDeckFormat,
-        is_public: false
+        format: newDeckFormat
       });
 
       setDecks(prev => [{ ...newDeck, total_cards: 0 }, ...prev]);
@@ -163,6 +161,26 @@ export function DeckBuilder() {
       ));
     } catch (error) {
       console.error('Error adding card to deck:', error);
+    }
+  };
+
+  const handleRemoveCardFromDeck = async (cardId: string) => {
+    if (!selectedDeck) return;
+
+    try {
+      await deckService.removeCardFromDeck(selectedDeck.id, cardId, 1);
+      // Refresh the selected deck
+      const updatedDeck = await deckService.getDeck(selectedDeck.id);
+      setSelectedDeck(updatedDeck);
+      
+      // Update deck count in list
+      setDecks(prev => prev.map(deck => 
+        deck.id === selectedDeck.id 
+          ? { ...deck, total_cards: Math.max(0, (deck.total_cards || 0) - 1) }
+          : deck
+      ));
+    } catch (error) {
+      console.error('Error removing card from deck:', error);
     }
   };
 
@@ -288,7 +306,7 @@ export function DeckBuilder() {
                     <div className="flex items-center space-x-2">
                       <span className="text-white font-medium">×{deckCard.quantity}</span>
                       <button
-                        onClick={() => {/* TODO: Remove card */}}
+                        onClick={() => handleRemoveCardFromDeck(deckCard.card_id)}
                         className="text-red-400 hover:text-red-300 p-1"
                       >
                         <X className="h-3 w-3" />
@@ -615,9 +633,6 @@ export function DeckBuilder() {
                     {deck.name}
                   </h3>
                   <div className="flex items-center space-x-1">
-                    {deck.is_public && (
-                      <Users className="h-4 w-4 text-blue-400" />
-                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
