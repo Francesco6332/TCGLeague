@@ -55,7 +55,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated, editingEvent
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    format: 'Standard' as 'Standard' | 'Limited' | 'Championship' | 'Casual',
+    format: 'Constructed' as 'Constructed' | 'Limited' | 'Championship' | 'Casual',
     startDate: '',
     startTime: '',
     endDate: '',
@@ -109,7 +109,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated, editingEvent
       setFormData({
         name: '',
         description: '',
-        format: 'Standard',
+        format: 'Constructed',
         startDate: '',
         startTime: '',
         endDate: '',
@@ -259,7 +259,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated, editingEvent
       setFormData({
         name: '',
         description: '',
-        format: 'Standard',
+        format: 'Constructed',
         startDate: '',
         startTime: '',
         endDate: '',
@@ -334,7 +334,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated, editingEvent
                     onChange={handleInputChange}
                     className="input-field w-full"
                   >
-                    <option value="Standard">Standard</option>
+                    <option value="Constructed">Constructed</option>
                     <option value="Limited">Limited</option>
                     <option value="Championship">Championship</option>
                     <option value="Casual">Casual</option>

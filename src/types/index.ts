@@ -39,7 +39,7 @@ export interface League {
   description: string;
   storeId: string;
   storeName: string;
-  format: 'Standard' | 'Limited' | 'Championship' | 'Casual';
+  format: 'Constructed' | 'Limited' | 'Championship' | 'Casual';
   startDate: Date;
   endDate: Date;
   maxParticipants?: number;
