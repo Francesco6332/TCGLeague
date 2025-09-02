@@ -156,6 +156,10 @@ export function Profile() {
             
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-center space-x-2 text-white/70">
+                <User className="h-4 w-4" />
+                <span>@{userProfile.username}</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2 text-white/70">
                 <Mail className="h-4 w-4" />
                 <span>{userProfile.email}</span>
               </div>
@@ -232,7 +236,10 @@ export function Profile() {
             <div className="space-y-6">
               {/* Basic Information */}
               <div>
-                <h4 className="text-lg font-medium text-white mb-4">Basic Information</h4>
+                <h4 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+                  <User className="h-5 w-5 text-blue-400" />
+                  <span>Basic Information</span>
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-white/80 mb-2">
