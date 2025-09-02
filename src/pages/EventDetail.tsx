@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
@@ -22,107 +24,104 @@ export function EventDetail() {
   const { userProfile } = useAuth();
   const [event, setEvent] = useState<League | null>(null);
   const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'participants' | 'rounds'>('overview');
 
   useEffect(() => {
-    // Simulate fetching event details
     const fetchEvent = async () => {
+      if (!id) return;
+      
       setLoading(true);
       
-      // Mock event data
-      const mockEvent: League = {
-        id: id || '1',
-        name: 'One Piece Championship Series',
-        description: 'Official tournament series with exclusive prizes and competitive play. This is a major event featuring top players from around the region competing for significant prizes and ranking points.',
-        storeId: 'store1',
-        storeName: 'Dragon Ball TCG Center',
-        format: 'Championship',
-        startDate: new Date('2024-02-15T10:00:00'),
-        endDate: new Date('2024-02-15T18:00:00'),
-        maxParticipants: 32,
-        entryFee: 15,
-        prizePool: 'First place: $200 cash prize + exclusive playmat, Second place: $100 + booster box, Third place: $50 + booster packs',
-        participants: [
-          {
-            playerId: 'player1',
-            playerName: 'Monkey D. Luffy',
-            deckName: 'Red Straw Hat Pirates',
-            registeredAt: new Date('2024-02-01'),
-          },
-          {
-            playerId: 'player2',
-            playerName: 'Roronoa Zoro',
-            deckName: 'Green Swordsman',
-            registeredAt: new Date('2024-02-02'),
-          },
-          {
-            playerId: 'player3',
-            playerName: 'Trafalgar Law',
-            deckName: 'Blue Heart Pirates',
-            registeredAt: new Date('2024-02-03'),
-          },
-        ],
-        rounds: [],
-        standings: [
-          {
-            playerId: 'player1',
-            playerName: 'Monkey D. Luffy',
-            points: 9,
-            wins: 3,
-            losses: 0,
-            draws: 0,
-            matchesPlayed: 3,
-            opponentWinPercentage: 0.67,
-            gameWinPercentage: 0.85,
-            rank: 1,
-          },
-          {
-            playerId: 'player2',
-            playerName: 'Roronoa Zoro',
-            points: 6,
-            wins: 2,
-            losses: 1,
-            draws: 0,
-            matchesPlayed: 3,
-            opponentWinPercentage: 0.56,
-            gameWinPercentage: 0.72,
-            rank: 2,
-          },
-          {
-            playerId: 'player3',
-            playerName: 'Trafalgar Law',
-            points: 3,
-            wins: 1,
-            losses: 2,
-            draws: 0,
-            matchesPlayed: 3,
-            opponentWinPercentage: 0.78,
-            gameWinPercentage: 0.45,
-            rank: 3,
-          },
-        ],
-        status: 'ongoing',
-        location: {
-          address: '123 Main St, Floor 2',
-          city: 'Tokyo',
-          state: 'Tokyo',
-          coordinates: {
-            lat: 35.6762,
-            lng: 139.6503,
-          },
-        },
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-02-10'),
-      };
-
-      setTimeout(() => {
-        setEvent(mockEvent);
+      try {
+        const eventDoc = await getDoc(doc(db, 'events', id));
+        
+        if (eventDoc.exists()) {
+          const eventData = eventDoc.data();
+          const event: League = {
+            id: eventDoc.id,
+            ...eventData,
+            startDate: eventData.startDate?.toDate() || new Date(),
+            endDate: eventData.endDate?.toDate() || new Date(),
+            createdAt: eventData.createdAt?.toDate() || new Date(),
+            updatedAt: eventData.updatedAt?.toDate() || new Date(),
+          } as League;
+          
+          setEvent(event);
+        } else {
+          console.error('Event not found');
+        }
+      } catch (error) {
+        console.error('Error fetching event:', error);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchEvent();
   }, [id]);
+
+  // Check if user is already registered
+  const isUserRegistered = event?.participants.some(
+    participant => participant.playerId === userProfile?.id
+  );
+
+  // Handle player registration
+  const handleRegisterForEvent = async () => {
+    if (!event || !userProfile || userProfile.userType !== 'player' || isUserRegistered) {
+      return;
+    }
+
+    setRegistering(true);
+    
+    try {
+      const participant = {
+        playerId: userProfile.id,
+        playerName: userProfile.username,
+        bandaiMembershipId: userProfile.bandaiMembershipId || '',
+        registeredAt: new Date(),
+        dropped: false,
+      };
+
+      await updateDoc(doc(db, 'events', event.id), {
+        participants: arrayUnion(participant),
+        updatedAt: new Date(),
+      });
+
+      // Update local state
+      setEvent(prev => prev ? {
+        ...prev,
+        participants: [...prev.participants, participant]
+      } : null);
+
+      console.log('✅ Successfully registered for event');
+    } catch (error) {
+      console.error('❌ Error registering for event:', error);
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-400"></div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-white mb-4">Event Not Found</h2>
+        <Link to="/" className="text-blue-400 hover:text-blue-300">
+          Return to Home
+        </Link>
+      </div>
+    );
+  }
+
+
 
   const getStatusColor = (status: League['status']) => {
     switch (status) {
@@ -188,6 +187,24 @@ export function EventDetail() {
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>
             {event.status}
           </span>
+          {/* Register Button for Players */}
+          {userProfile?.userType === 'player' && event.status === 'upcoming' && (
+            <button 
+              onClick={handleRegisterForEvent}
+              disabled={isUserRegistered || registering || (event.maxParticipants && event.participants.length >= event.maxParticipants)}
+              className={`btn-primary flex items-center space-x-2 ${
+                isUserRegistered ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>
+                {registering ? 'Registering...' : 
+                 isUserRegistered ? 'Already Registered' : 'Register for Event'}
+              </span>
+            </button>
+          )}
+          
+          {/* Edit Button for Store Owners */}
           {canEdit && (
             <button className="btn-primary flex items-center space-x-2">
               <Edit className="h-4 w-4" />

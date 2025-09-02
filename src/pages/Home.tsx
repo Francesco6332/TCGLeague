@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   Calendar, 
   MapPin, 
@@ -204,12 +205,12 @@ export function Home() {
             ) : (
               <div className="space-y-4">
                 {nearbyEvents.map((event) => (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
-                  >
+                  <Link key={event.id} to={`/events/${event.id}`}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                    >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
@@ -253,7 +254,8 @@ export function Home() {
                         <div className="text-xs text-white/60">Entry Fee</div>
                       </div>
                     </div>
-                  </motion.div>
+                    </motion.div>
+                  </Link>
                 ))}
                 
                 {nearbyEvents.length === 0 && (

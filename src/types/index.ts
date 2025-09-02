@@ -65,6 +65,7 @@ export interface League {
 export interface Participant {
   playerId: string;
   playerName: string;
+  bandaiMembershipId?: string;
   deckName?: string;
   registeredAt: Date;
   dropped?: boolean;
