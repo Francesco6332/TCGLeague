@@ -22,6 +22,7 @@ export function Profile() {
   const [formData, setFormData] = useState({
     username: userProfile?.username || '',
     email: userProfile?.email || '',
+    bandaiMembershipId: userProfile?.bandaiMembershipId || '',
     storeName: userProfile?.userType === 'store' ? (userProfile as any).storeName || '' : '',
     phone: userProfile?.userType === 'store' ? (userProfile as any).phone || '' : '',
     website: userProfile?.userType === 'store' ? (userProfile as any).website || '' : '',
@@ -62,6 +63,7 @@ export function Profile() {
       const updateData = {
         username: formData.username,
         email: formData.email,
+        bandaiMembershipId: formData.bandaiMembershipId,
         updatedAt: new Date(),
         ...(userProfile.userType === 'store' && {
           storeName: formData.storeName,
@@ -85,6 +87,7 @@ export function Profile() {
     setFormData({
       username: userProfile?.username || '',
       email: userProfile?.email || '',
+      bandaiMembershipId: userProfile?.bandaiMembershipId || '',
       storeName: userProfile?.userType === 'store' ? (userProfile as any).storeName || '' : '',
       phone: userProfile?.userType === 'store' ? (userProfile as any).phone || '' : '',
       website: userProfile?.userType === 'store' ? (userProfile as any).website || '' : '',
@@ -168,7 +171,7 @@ export function Profile() {
             <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10">
               <div className="text-center">
                 <div className="text-lg font-bold text-blue-400">
-                  {isStore ? '8' : '12'}
+                  0
                 </div>
                 <div className="text-xs text-white/60">
                   {isStore ? 'Events Organized' : 'Events Joined'}
@@ -176,7 +179,7 @@ export function Profile() {
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-purple-400">
-                  {isStore ? '147' : '68%'}
+                  {isStore ? '0' : '0%'}
                 </div>
                 <div className="text-xs text-white/60">
                   {isStore ? 'Total Players' : 'Win Rate'}
@@ -262,6 +265,26 @@ export function Profile() {
                       />
                     ) : (
                       <p className="text-white p-2">{userProfile.email}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/80 mb-2">
+                      Bandai Membership ID
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="bandaiMembershipId"
+                        value={formData.bandaiMembershipId}
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="Enter your Bandai Membership ID"
+                      />
+                    ) : (
+                      <p className="text-white p-2">
+                        {userProfile.bandaiMembershipId || 'Not provided'}
+                      </p>
                     )}
                   </div>
                 </div>
