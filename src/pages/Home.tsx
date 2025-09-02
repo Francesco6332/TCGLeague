@@ -188,10 +188,13 @@ export function Home() {
                   </span>
                 )}
               </h2>
-              <button className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1">
+              <Link 
+                to="/events" 
+                className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1"
+              >
                 <span>View All</span>
                 <ArrowRight className="h-4 w-4" />
-              </button>
+              </Link>
             </div>
 
             {loading ? (

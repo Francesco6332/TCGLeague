@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Calendar, 
@@ -13,74 +13,129 @@ import {
   Filter,
   Search,
   Eye,
-  Edit
+  Edit,
+  Navigation,
+  AlertCircle
 } from 'lucide-react';
 import type { League } from '../types';
 import { CreateEventModal } from '../components/CreateEventModal';
+import { useGeolocation, calculateDistance } from '../hooks/useGeolocation';
+
+interface LeagueWithDistance extends League {
+  distance?: number | null;
+}
 
 export function Events() {
   const { userProfile } = useAuth();
-  const [events, setEvents] = useState<League[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [events, setEvents] = useState<LeagueWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'completed'>('all');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [locationSearch, setLocationSearch] = useState(searchParams.get('location') || '');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'completed'>(
+    (searchParams.get('status') as any) || 'all'
+  );
+  const [viewMode, setViewMode] = useState<'all' | 'my'>(
+    userProfile?.userType === 'store' ? 'my' : 'all'
+  );
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { latitude, longitude, error: locationError, loading: locationLoading } = useGeolocation();
 
   useEffect(() => {
-    // Fetch user's events from Firestore
+    // Update URL parameters when search state changes
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (locationSearch) params.set('location', locationSearch);
+    if (filterStatus !== 'all') params.set('status', filterStatus);
+    setSearchParams(params);
+  }, [searchTerm, locationSearch, filterStatus, setSearchParams]);
+
+  useEffect(() => {
+    // Fetch events from Firestore
     const fetchEvents = async () => {
       if (!userProfile) return;
       
       setLoading(true);
       
       try {
-        
         let eventsQuery;
         
-        if (userProfile.userType === 'store') {
-          // For stores: fetch events they created (remove orderBy to avoid index issues)
+        if (viewMode === 'my') {
+          // Fetch user's specific events
+          if (userProfile.userType === 'store') {
+            // For stores: fetch events they created
+            eventsQuery = query(
+              collection(db, 'events'),
+              where('storeId', '==', userProfile.id)
+            );
+          } else {
+            // For players: fetch ALL events and filter client-side for their participation
+            eventsQuery = query(collection(db, 'events'));
+          }
+        } else {
+          // Fetch ALL events for discovery
           eventsQuery = query(
             collection(db, 'events'),
-            where('storeId', '==', userProfile.id)
-          );
-        } else {
-          // For players: fetch ALL events and filter client-side
-          // This avoids the complex array-contains issue
-          eventsQuery = query(
-            collection(db, 'events')
+            limit(50) // Limit for performance
           );
         }
         
         const eventsSnapshot = await getDocs(eventsQuery);
         
-        let userEvents = eventsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          startDate: doc.data().startDate?.toDate() || new Date(),
-          endDate: doc.data().endDate?.toDate() || new Date(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        })) as League[];
+        let fetchedEvents = eventsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            startDate: data.startDate?.toDate() || new Date(),
+            endDate: data.endDate?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+          };
+        }) as League[];
         
-        // For players: filter events where they are participants (client-side)
-        if (userProfile.userType === 'player') {
-          userEvents = userEvents.filter(event => 
+        // For "my" mode with players: filter events where they are participants
+        if (viewMode === 'my' && userProfile.userType === 'player') {
+          fetchedEvents = fetchedEvents.filter(event => 
             event.participants.some(participant => 
               participant.playerId === userProfile.id
             )
           );
         }
+
+        // Add distance calculation if geolocation is available
+        if (latitude && longitude) {
+          fetchedEvents = fetchedEvents.map(event => ({
+            ...event,
+            distance: event.location.coordinates
+              ? calculateDistance(
+                  latitude,
+                  longitude,
+                  event.location.coordinates.lat,
+                  event.location.coordinates.lng
+                )
+              : null,
+          }));
+        }
         
-        // Sort by date (client-side to avoid index issues)
-        userEvents.sort((a, b) => {
-          if (userProfile.userType === 'store') {
-            return b.createdAt.getTime() - a.createdAt.getTime(); // newest first
+        // Sort events
+        fetchedEvents.sort((a, b) => {
+          // If in "all" mode and we have distances, sort by distance first
+          if (viewMode === 'all' && 
+              (a as LeagueWithDistance).distance !== null && 
+              (b as LeagueWithDistance).distance !== null) {
+            return ((a as LeagueWithDistance).distance || 0) - ((b as LeagueWithDistance).distance || 0);
+          }
+          
+          // Default sort by date
+          if (userProfile.userType === 'store' && viewMode === 'my') {
+            return b.createdAt.getTime() - a.createdAt.getTime(); // newest first for store's own events
           } else {
-            return b.startDate.getTime() - a.startDate.getTime(); // upcoming first
+            return a.startDate.getTime() - b.startDate.getTime(); // upcoming first
           }
         });
         
-        setEvents(userEvents);
+        setEvents(fetchedEvents);
       } catch (error) {
         console.error('Error fetching events:', error);
         setEvents([]);
@@ -90,13 +145,22 @@ export function Events() {
     };
 
     fetchEvents();
-  }, [userProfile]);
+  }, [userProfile, viewMode, latitude, longitude]);
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.storeName.toLowerCase().includes(searchTerm.toLowerCase());
+                         event.storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.format.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesLocation = !locationSearch || 
+                           event.location.city.toLowerCase().includes(locationSearch.toLowerCase()) ||
+                           event.location.state.toLowerCase().includes(locationSearch.toLowerCase()) ||
+                           event.location.address.toLowerCase().includes(locationSearch.toLowerCase());
+    
     const matchesFilter = filterStatus === 'all' || event.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    
+    return matchesSearch && matchesLocation && matchesFilter;
   });
 
   const getStatusColor = (status: League['status']) => {
@@ -132,14 +196,66 @@ export function Events() {
       >
         <div>
           <h1 className="text-3xl font-bold gradient-text">
-            {userProfile?.userType === 'store' ? 'My Organized Events' : 'My Events'}
+            {viewMode === 'all' ? 'Discover Events' : userProfile?.userType === 'store' ? 'My Organized Events' : 'My Events'}
           </h1>
           <p className="text-white/70 mt-2">
-            {userProfile?.userType === 'store' 
-              ? 'Manage and organize your tournaments'
-              : 'Track your tournament participation and results'
+            {viewMode === 'all' 
+              ? 'Find and join tournaments in your area'
+              : userProfile?.userType === 'store' 
+                ? 'Manage and organize your tournaments'
+                : 'Track your tournament participation and results'
             }
           </p>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-4 mt-4">
+            <div className="flex items-center space-x-2 bg-white/10 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('all')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'all' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                All Events
+              </button>
+              <button
+                onClick={() => setViewMode('my')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'my' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {userProfile?.userType === 'store' ? 'My Events' : 'Joined Events'}
+              </button>
+            </div>
+            
+            {/* Geolocation Status */}
+            {viewMode === 'all' && (
+              <div className="flex items-center space-x-2 text-sm text-white/60">
+                {locationLoading && (
+                  <>
+                    <div className="animate-spin h-3 w-3 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                    <span>Getting location...</span>
+                  </>
+                )}
+                {locationError && (
+                  <>
+                    <AlertCircle className="h-3 w-3 text-yellow-400" />
+                    <span>Location disabled</span>
+                  </>
+                )}
+                {latitude && longitude && !locationLoading && (
+                  <>
+                    <Navigation className="h-3 w-3 text-green-400" />
+                    <span>Location enabled</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         
         {userProfile?.userType === 'store' && (
@@ -163,33 +279,74 @@ export function Events() {
         transition={{ delay: 0.1 }}
         className="card p-6"
       >
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
-            <input
-              type="text"
-              placeholder="Search events..."
-              className="input-field w-full pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div className="space-y-4">
+          {/* Primary Search Row */}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Event Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <input
+                type="text"
+                placeholder="Search events, stores, descriptions..."
+                className="input-field w-full pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Location Search */}
+            <div className="flex-1 relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <input
+                type="text"
+                placeholder="City, state, or address..."
+                className="input-field w-full pl-10"
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-white/60" />
+              <select
+                className="input-field min-w-32"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as any)}
+              >
+                <option value="all">All Status</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-white/60" />
-            <select
-              className="input-field"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-            >
-              <option value="all">All Status</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
+          {/* Search Results Info */}
+          {(searchTerm || locationSearch || filterStatus !== 'all') && (
+            <div className="flex items-center justify-between text-sm text-white/60 bg-white/5 rounded-lg px-4 py-2">
+              <div className="flex items-center space-x-4">
+                <span>
+                  {filteredEvents.length} events found
+                  {viewMode === 'all' && latitude && longitude && (
+                    <span className="ml-2 text-green-400">• Sorted by distance</span>
+                  )}
+                </span>
+                {(searchTerm || locationSearch || filterStatus !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setLocationSearch('');
+                      setFilterStatus('all');
+                    }}
+                    className="text-blue-400 hover:text-blue-300 underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -220,15 +377,20 @@ export function Events() {
               {searchTerm || filterStatus !== 'all' ? 'No events found' : 'No events yet'}
             </h3>
             <p className="text-white/60 mb-6">
-              {searchTerm || filterStatus !== 'all' 
+              {searchTerm || locationSearch || filterStatus !== 'all' 
                 ? 'Try adjusting your search or filter criteria'
-                : userProfile?.userType === 'store'
-                  ? 'Create your first event to get started'
-                  : 'Join some events to see them here'
+                : viewMode === 'all'
+                  ? 'No events available right now. Check back later!'
+                  : userProfile?.userType === 'store'
+                    ? 'Create your first event to get started'
+                    : 'Join some events to see them here'
               }
             </p>
-            {userProfile?.userType === 'store' && !searchTerm && filterStatus === 'all' && (
-              <button className="btn-primary flex items-center space-x-2 mx-auto">
+            {userProfile?.userType === 'store' && viewMode === 'my' && !searchTerm && !locationSearch && filterStatus === 'all' && (
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="btn-primary flex items-center space-x-2 mx-auto"
+              >
                 <Plus className="h-4 w-4" />
                 <span>Create Your First Event</span>
               </button>
@@ -262,9 +424,16 @@ export function Events() {
                     <Calendar className="h-4 w-4" />
                     <span>{formatDate(event.startDate)}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-white/60">
-                    <MapPin className="h-4 w-4" />
-                    <span>{event.storeName}</span>
+                  <div className="flex items-center justify-between text-sm text-white/60">
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{event.location.city || event.storeName}</span>
+                    </div>
+                    {event.distance && (
+                      <span className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-full text-xs">
+                        {event.distance.toFixed(1)} km
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-white/60">
                     <Users className="h-4 w-4" />
@@ -288,7 +457,7 @@ export function Events() {
                       <Eye className="h-3 w-3" />
                       <span>View</span>
                     </Link>
-                    {userProfile?.userType === 'store' && (
+                    {userProfile?.userType === 'store' && viewMode === 'my' && event.storeId === userProfile.id && (
                       <button className="btn-primary flex items-center space-x-1 px-3 py-1 text-sm">
                         <Edit className="h-3 w-3" />
                         <span>Edit</span>
