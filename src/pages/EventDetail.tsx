@@ -330,13 +330,6 @@ export function EventDetail() {
                 <span>Prize Pool</span>
               </h3>
               <p className="text-white/80 text-sm leading-relaxed">{event.prizePool}</p>
-              
-              {!isParticipant && !isStore && event.status === 'upcoming' && (
-                <button className="btn-primary w-full mt-4 flex items-center justify-center space-x-2">
-                  <UserPlus className="h-4 w-4" />
-                  <span>Join Event</span>
-                </button>
-              )}
             </div>
           </div>
         )}
