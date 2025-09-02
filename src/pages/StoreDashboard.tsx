@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs} from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -18,12 +18,14 @@ import {
 } from 'lucide-react';
 import type { League } from '../types';
 import { CreateEventModal } from '../components/CreateEventModal';
+import { ResultsManager } from '../components/ResultsManager';
 
 export function StoreDashboard() {
   const { userProfile } = useAuth();
   const [events, setEvents] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<League | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'results'>('overview');
 
   useEffect(() => {
@@ -65,6 +67,15 @@ export function StoreDashboard() {
 
   const handleEventCreated = (newEvent: League) => {
     setEvents(prev => [newEvent, ...prev]);
+  };
+
+  const handleStandingsUpdated = (updatedEvent: League) => {
+    setEvents(prev => 
+      prev.map(event => 
+        event.id === updatedEvent.id ? updatedEvent : event
+      )
+    );
+    setSelectedEvent(updatedEvent);
   };
 
   const getStatusColor = (status: League['status']) => {
@@ -370,19 +381,77 @@ export function StoreDashboard() {
         )}
 
         {activeTab === 'results' && (
-          <div className="card p-6">
-            <h3 className="text-xl font-semibold text-white mb-6">Results Management</h3>
-            
-            <div className="text-center py-12">
-              <Target className="h-16 w-16 text-white/40 mx-auto mb-4" />
-              <h4 className="text-xl font-semibold text-white mb-2">Results Management</h4>
-              <p className="text-white/60 mb-6">
-                Input match results to automatically update standings for your tournaments.
-              </p>
-              <p className="text-white/40 text-sm">
-                This feature will allow you to manage tournament brackets and update player standings.
-              </p>
-            </div>
+          <div className="space-y-6">
+            {!selectedEvent ? (
+              <div className="card p-6">
+                <h3 className="text-xl font-semibold text-white mb-6">Select Event to Manage</h3>
+                
+                {events.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Target className="h-16 w-16 text-white/40 mx-auto mb-4" />
+                    <h4 className="text-xl font-semibold text-white mb-2">No Events Available</h4>
+                    <p className="text-white/60 mb-6">Create an event first to manage results and standings.</p>
+                    <button 
+                      onClick={() => setShowCreateModal(true)}
+                      className="btn-primary"
+                    >
+                      Create Event
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {events.map((event) => (
+                      <div 
+                        key={event.id} 
+                        onClick={() => setSelectedEvent(event)}
+                        className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-white mb-1">{event.name}</h4>
+                            <p className="text-white/60 text-sm">{formatDate(event.startDate)}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+                            {event.status}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center space-x-2 text-white/60">
+                            <Users className="h-4 w-4" />
+                            <span>{event.participants.length} players</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-white/60">
+                            <Trophy className="h-4 w-4" />
+                            <span>{event.standings.length > 0 ? 'Has standings' : 'No results yet'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center space-x-4 mb-6">
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="btn-secondary"
+                  >
+                    ← Back to Events
+                  </button>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">{selectedEvent.name}</h3>
+                    <p className="text-white/60 text-sm">{selectedEvent.participants.length} participants</p>
+                  </div>
+                </div>
+                
+                <ResultsManager 
+                  event={selectedEvent} 
+                  onStandingsUpdated={handleStandingsUpdated}
+                />
+              </div>
+            )}
           </div>
         )}
       </motion.div>
