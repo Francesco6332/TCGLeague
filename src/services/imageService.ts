@@ -2,13 +2,13 @@ import { useState } from 'react';
 
 /**
  * Service for managing One Piece TCG card images
- * Uses external URLs to avoid storage space issues
+ * Uses Google Drive public links for free image hosting
  */
 export class ImageService {
   /**
-   * Get the external URL for a card image
+   * Get the Google Drive URL for a card image
    * @param cardNumber - Card number (e.g., "OP01-001")
-   * @returns External URL for the card image
+   * @returns Google Drive URL for the card image
    */
   static getCardImageUrl(cardNumber: string): string {
     if (!cardNumber) {
@@ -23,8 +23,16 @@ export class ImageService {
         return this.getPlaceholderUrl();
       }
 
-      // Use Cloudflare Images service
-      return `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/public`;
+      // Use Google Drive public links
+      // Format: https://drive.google.com/uc?export=view&id=FILE_ID
+      const driveFileIds = this.getDriveFileIds();
+      const fileId = driveFileIds[`${setCode}-${cardNumber}`];
+      
+      if (fileId) {
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+      
+      return this.getPlaceholderUrl();
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return this.getPlaceholderUrl();
@@ -35,25 +43,10 @@ export class ImageService {
    * Get alternative image URL with different format
    * @param cardNumber - Card number (e.g., "OP01-001")
    * @param format - Image format ('png' or 'jpg')
-   * @returns External URL for the card image in specified format
+   * @returns Google Drive URL for the card image
    */
   static getCardImageUrlWithFormat(cardNumber: string, format: 'png' | 'jpg' = 'png'): string {
-    if (!cardNumber) {
-      return this.getPlaceholderUrl();
-    }
-
-    try {
-      const setCode = cardNumber.split('-')[0];
-      
-      if (!setCode) {
-        return this.getPlaceholderUrl();
-      }
-
-      return `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/public`;
-    } catch (error) {
-      console.error('Error getting card image URL:', error);
-      return this.getPlaceholderUrl();
-    }
+    return this.getCardImageUrl(cardNumber);
   }
 
   /**
@@ -98,12 +91,42 @@ export class ImageService {
     const setCode = cardNumber.split('-')[0];
     if (!setCode) return [this.getPlaceholderUrl()];
 
-    return [
-      `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/public`,
-      `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/w=400`,
-      `https://imagedelivery.net/upQ0aZz0vVT0S5FJrQHp0A/${setCode}-${cardNumber}/w=200`,
-      this.getPlaceholderUrl()
-    ];
+    const driveFileIds = this.getDriveFileIds();
+    const fileId = driveFileIds[`${setCode}-${cardNumber}`];
+    
+    if (fileId) {
+      return [
+        `https://drive.google.com/uc?export=view&id=${fileId}`,
+        `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
+        `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`,
+        this.getPlaceholderUrl()
+      ];
+    }
+
+    return [this.getPlaceholderUrl()];
+  }
+
+  /**
+   * Get Google Drive file IDs mapping
+   * You need to replace these with your actual Google Drive file IDs
+   */
+  static getDriveFileIds(): Record<string, string> {
+    return {
+      // OP01 Cards
+      'OP01-OP01-001': '1Bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      'OP01-OP01-002': '1Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      'OP01-OP01-003': '1Dxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      
+      // OP02 Cards
+      'OP02-OP02-001': '1Exxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      'OP02-OP02-002': '1Fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      
+      // EB01 Cards
+      'EB01-EB01-001': '1Gxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      'EB01-EB01-002': '1Hxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      
+      // Add more mappings as you upload images
+    };
   }
 }
 
@@ -112,7 +135,7 @@ export function getCardImageUrl(cardNumber: string): string {
   return ImageService.getCardImageUrl(cardNumber);
 }
 
-// React hook for card images with external URL support
+// React hook for card images with Google Drive support
 export function useCardImage(cardNumber: string) {
   const [imageUrl, setImageUrl] = useState(ImageService.getCardImageUrl(cardNumber));
   const [hasError, setHasError] = useState(false);
