@@ -20,7 +20,7 @@ interface DeckWithCardCount extends Deck {
 }
 
 export function DeckBuilder() {
-    const { userProfile } = useAuth();
+  const { userProfile } = useAuth();
     const [decks, setDecks] = useState<DeckWithCardCount[]>([]);
     const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
     const [cards, setCards] = useState<Card[]>([]);
@@ -265,12 +265,31 @@ export function DeckBuilder() {
       }
     };
 
-    const filteredDecks = decks.filter(deck =>
-      deck.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      const filteredDecks = decks.filter(deck =>
+    deck.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    if (selectedDeck) {
-      return (
+
+
+    // Check if user is not authenticated
+  if (!userProfile) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <Layers className="h-16 w-16 text-white/40 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Please log in to access Deck Builder
+          </h3>
+          <p className="text-white/60 mb-6">
+            You need to be logged in to create and manage your decks
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedDeck) {
+    return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
           {/* Deck Editor Header - Fixed Top */}
           <motion.div
@@ -612,8 +631,10 @@ export function DeckBuilder() {
       </div>
     );
 
-    return (
-      <div className="space-y-6">
+      console.log('Rendering main DeckBuilder view');
+  
+  return (
+    <div className="space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
