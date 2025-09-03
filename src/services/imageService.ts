@@ -16,7 +16,12 @@ export class ImageService {
       return this.getPlaceholderUrl();
     }
 
+    console.log('=== IMAGE SERVICE DEBUG ===');
     console.log('Current storage provider:', envConfig.storageProvider);
+    console.log('Environment variables check:');
+    console.log('- VITE_STORAGE_PROVIDER:', process.env.VITE_STORAGE_PROVIDER);
+    console.log('- VITE_DIGITALOCEAN_SPACES_ENDPOINT:', process.env.VITE_DIGITALOCEAN_SPACES_ENDPOINT ? 'SET' : 'NOT SET');
+    console.log('- VITE_DIGITALOCEAN_SPACES_ACCESS_KEY_ID:', process.env.VITE_DIGITALOCEAN_SPACES_ACCESS_KEY_ID ? 'SET' : 'NOT SET');
 
     try {
       switch (envConfig.storageProvider) {

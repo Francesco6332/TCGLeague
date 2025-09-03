@@ -66,9 +66,9 @@ const defaultConfig: EnvironmentConfig = {
   storageProvider: STORAGE_PROVIDERS.DIGITALOCEAN_SPACES,
   
   digitalOceanSpaces: {
-    endpoint: '',
+    endpoint: 'https://tcg-league-images.fra1.digitaloceanspaces.com',
     bucket: 'tcg-league-images',
-    region: 'nyc3',
+    region: 'fra1',
     accessKeyId: '',
     secretAccessKey: ''
   },
