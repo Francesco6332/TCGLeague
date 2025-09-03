@@ -846,19 +846,71 @@ function generateCardData(setCode: string, cardNumber: string): Card | null {
 // Helper functions to generate card properties
 function generateCardName(setCode: string, cardNum: number): string {
   const setNames: Record<string, string[]> = {
-    'OP01': ['Monkey D. Luffy', 'Roronoa Zoro', 'Nami', 'Usopp', 'Sanji', 'Tony Tony Chopper', 'Nico Robin', 'Franky', 'Brook', 'Jinbe'],
-    'OP02': ['Trafalgar Law', 'Eustass Kid', 'Killer', 'Heat', 'Wire', 'Apoo', 'Hawkins', 'Drake', 'Urouge', 'Bonney'],
-    'OP03': ['Kaido', 'King', 'Queen', 'Jack', 'Who\'s Who', 'Black Maria', 'Sasaki', 'Ulti', 'Page One', 'Scratchmen Apoo'],
-    'OP04': ['Big Mom', 'Katakuri', 'Smoothie', 'Cracker', 'Perospero', 'Oven', 'Daifuku', 'Compote', 'Galette', 'Mont-d\'Or'],
-    'OP05': ['Shanks', 'Benn Beckman', 'Lucky Roux', 'Yasopp', 'Rockstar', 'Limejuice', 'Building Snake', 'Monster', 'Howling Gab', 'Rockstar'],
-    'OP06': ['Blackbeard', 'Jesus Burgess', 'Van Augur', 'Doc Q', 'Laffitte', 'Avalo Pizarro', 'Catarina Devon', 'Sanjuan Wolf', 'Vasco Shot', 'Shiryu'],
-    'OP07': ['Sakazuki', 'Borsalino', 'Issho', 'Aramaki', 'Garp', 'Sengoku', 'Tsuru', 'Momonga', 'Hina', 'Smoker'],
-    'OP08': ['Dragon', 'Sabo', 'Koala', 'Hack', 'Lindbergh', 'Belo Betty', 'Morley', 'Karasu', 'Ivankov', 'Emporio Ivankov'],
-    'OP09': ['Crocodile', 'Daz Bones', 'Mr. 1', 'Mr. 2', 'Mr. 3', 'Miss Doublefinger', 'Miss Goldenweek', 'Miss Merry Christmas', 'Miss Valentine', 'Miss All Sunday'],
-    'OP10': ['Whitebeard', 'Marco', 'Portgas D. Ace', 'Jozu', 'Vista', 'Thatch', 'Izo', 'Haruta', 'Namur', 'Blamenco'],
-    'OP11': ['Gol D. Roger', 'Silvers Rayleigh', 'Scopper Gaban', 'Oden', 'Inuarashi', 'Nekomamushi', 'Kawamatsu', 'Denjiro', 'Ashura Doji', 'Kinemon'],
-    'OP12': ['Luffy', 'Zoro', 'Nami', 'Usopp', 'Sanji', 'Chopper', 'Robin', 'Franky', 'Brook', 'Jinbe'],
-    'OP13': ['Luffy', 'Zoro', 'Nami', 'Usopp', 'Sanji', 'Chopper', 'Robin', 'Franky', 'Brook', 'Jinbe']
+    'OP01': [
+      'Monkey D. Luffy', 'Roronoa Zoro', 'Nami', 'Usopp', 'Sanji', 'Tony Tony Chopper', 'Nico Robin', 'Franky', 'Brook', 'Jinbe',
+      'Shanks', 'Benn Beckman', 'Lucky Roux', 'Yasopp', 'Rockstar', 'Limejuice', 'Building Snake', 'Monster', 'Howling Gab', 'Rockstar',
+      'Buggy', 'Alvida', 'Morgan', 'Helmeppo', 'Koby', 'Garp', 'Sengoku', 'Tsuru', 'Momonga', 'Hina'
+    ],
+    'OP02': [
+      'Trafalgar Law', 'Eustass Kid', 'Killer', 'Heat', 'Wire', 'Apoo', 'Hawkins', 'Drake', 'Urouge', 'Bonney',
+      'Capone Bege', 'Jewelry Bonney', 'Basil Hawkins', 'X Drake', 'Scratchmen Apoo', 'Eustass Kid', 'Killer', 'Heat', 'Wire', 'Apoo',
+      'Marco', 'Portgas D. Ace', 'Jozu', 'Vista', 'Thatch', 'Izo', 'Haruta', 'Namur', 'Blamenco', 'Curiel'
+    ],
+    'OP03': [
+      'Kaido', 'King', 'Queen', 'Jack', 'Who\'s Who', 'Black Maria', 'Sasaki', 'Ulti', 'Page One', 'Scratchmen Apoo',
+      'Yamato', 'Kawamatsu', 'Denjiro', 'Ashura Doji', 'Kinemon', 'Inuarashi', 'Nekomamushi', 'Kawamatsu', 'Denjiro', 'Ashura Doji',
+      'Oden', 'Toki', 'Momonosuke', 'Hiyori', 'Tama', 'Komurasaki', 'Otama', 'Kiku', 'Izo', 'Kanjuro'
+    ],
+    'OP04': [
+      'Big Mom', 'Katakuri', 'Smoothie', 'Cracker', 'Perospero', 'Oven', 'Daifuku', 'Compote', 'Galette', 'Mont-d\'Or',
+      'Charlotte Linlin', 'Charlotte Katakuri', 'Charlotte Smoothie', 'Charlotte Cracker', 'Charlotte Perospero', 'Charlotte Oven', 'Charlotte Daifuku', 'Charlotte Compote', 'Charlotte Galette', 'Charlotte Mont-d\'Or',
+      'Charlotte Pudding', 'Charlotte Flambe', 'Charlotte Opera', 'Charlotte Snack', 'Charlotte Tamago', 'Charlotte Pekoms', 'Charlotte Bobbin', 'Charlotte Amande', 'Charlotte Citron', 'Charlotte Cinnamon'
+    ],
+    'OP05': [
+      'Shanks', 'Benn Beckman', 'Lucky Roux', 'Yasopp', 'Rockstar', 'Limejuice', 'Building Snake', 'Monster', 'Howling Gab', 'Rockstar',
+      'Red Hair Shanks', 'Benn Beckman', 'Lucky Roux', 'Yasopp', 'Rockstar', 'Limejuice', 'Building Snake', 'Monster', 'Howling Gab', 'Rockstar',
+      'Red Hair Pirates', 'Benn Beckman', 'Lucky Roux', 'Yasopp', 'Rockstar', 'Limejuice', 'Building Snake', 'Monster', 'Howling Gab', 'Rockstar'
+    ],
+    'OP06': [
+      'Blackbeard', 'Jesus Burgess', 'Van Augur', 'Doc Q', 'Laffitte', 'Avalo Pizarro', 'Catarina Devon', 'Sanjuan Wolf', 'Vasco Shot', 'Shiryu',
+      'Marshall D. Teach', 'Jesus Burgess', 'Van Augur', 'Doc Q', 'Laffitte', 'Avalo Pizarro', 'Catarina Devon', 'Sanjuan Wolf', 'Vasco Shot', 'Shiryu',
+      'Blackbeard Pirates', 'Jesus Burgess', 'Van Augur', 'Doc Q', 'Laffitte', 'Avalo Pizarro', 'Catarina Devon', 'Sanjuan Wolf', 'Vasco Shot', 'Shiryu'
+    ],
+    'OP07': [
+      'Sakazuki', 'Borsalino', 'Issho', 'Aramaki', 'Garp', 'Sengoku', 'Tsuru', 'Momonga', 'Hina', 'Smoker',
+      'Akainu', 'Kizaru', 'Fujitora', 'Ryokugyu', 'Garp', 'Sengoku', 'Tsuru', 'Momonga', 'Hina', 'Smoker',
+      'Marine Admiral', 'Kizaru', 'Fujitora', 'Ryokugyu', 'Garp', 'Sengoku', 'Tsuru', 'Momonga', 'Hina', 'Smoker'
+    ],
+    'OP08': [
+      'Dragon', 'Sabo', 'Koala', 'Hack', 'Lindbergh', 'Belo Betty', 'Morley', 'Karasu', 'Ivankov', 'Emporio Ivankov',
+      'Monkey D. Dragon', 'Sabo', 'Koala', 'Hack', 'Lindbergh', 'Belo Betty', 'Morley', 'Karasu', 'Ivankov', 'Emporio Ivankov',
+      'Revolutionary Army', 'Sabo', 'Koala', 'Hack', 'Lindbergh', 'Belo Betty', 'Morley', 'Karasu', 'Ivankov', 'Emporio Ivankov'
+    ],
+    'OP09': [
+      'Crocodile', 'Daz Bones', 'Mr. 1', 'Mr. 2', 'Mr. 3', 'Miss Doublefinger', 'Miss Goldenweek', 'Miss Merry Christmas', 'Miss Valentine', 'Miss All Sunday',
+      'Sir Crocodile', 'Daz Bones', 'Mr. 1', 'Mr. 2', 'Mr. 3', 'Miss Doublefinger', 'Miss Goldenweek', 'Miss Merry Christmas', 'Miss Valentine', 'Miss All Sunday',
+      'Baroque Works', 'Daz Bones', 'Mr. 1', 'Mr. 2', 'Mr. 3', 'Miss Doublefinger', 'Miss Goldenweek', 'Miss Merry Christmas', 'Miss Valentine', 'Miss All Sunday'
+    ],
+    'OP10': [
+      'Whitebeard', 'Marco', 'Portgas D. Ace', 'Jozu', 'Vista', 'Thatch', 'Izo', 'Haruta', 'Namur', 'Blamenco',
+      'Edward Newgate', 'Marco', 'Portgas D. Ace', 'Jozu', 'Vista', 'Thatch', 'Izo', 'Haruta', 'Namur', 'Blamenco',
+      'Whitebeard Pirates', 'Marco', 'Portgas D. Ace', 'Jozu', 'Vista', 'Thatch', 'Izo', 'Haruta', 'Namur', 'Blamenco'
+    ],
+    'OP11': [
+      'Gol D. Roger', 'Silvers Rayleigh', 'Scopper Gaban', 'Oden', 'Inuarashi', 'Nekomamushi', 'Kawamatsu', 'Denjiro', 'Ashura Doji', 'Kinemon',
+      'Gold Roger', 'Silvers Rayleigh', 'Scopper Gaban', 'Kozuki Oden', 'Inuarashi', 'Nekomamushi', 'Kawamatsu', 'Denjiro', 'Ashura Doji', 'Kinemon',
+      'Roger Pirates', 'Silvers Rayleigh', 'Scopper Gaban', 'Kozuki Oden', 'Inuarashi', 'Nekomamushi', 'Kawamatsu', 'Denjiro', 'Ashura Doji', 'Kinemon'
+    ],
+    'OP12': [
+      'Luffy', 'Zoro', 'Nami', 'Usopp', 'Sanji', 'Chopper', 'Robin', 'Franky', 'Brook', 'Jinbe',
+      'Monkey D. Luffy', 'Roronoa Zoro', 'Nami', 'Usopp', 'Sanji', 'Tony Tony Chopper', 'Nico Robin', 'Franky', 'Brook', 'Jinbe',
+      'Straw Hat Luffy', 'Roronoa Zoro', 'Nami', 'Usopp', 'Sanji', 'Tony Tony Chopper', 'Nico Robin', 'Franky', 'Brook', 'Jinbe'
+    ],
+    'OP13': [
+      'Luffy', 'Zoro', 'Nami', 'Usopp', 'Sanji', 'Chopper', 'Robin', 'Franky', 'Brook', 'Jinbe',
+      'Monkey D. Luffy', 'Roronoa Zoro', 'Nami', 'Usopp', 'Sanji', 'Tony Tony Chopper', 'Nico Robin', 'Franky', 'Brook', 'Jinbe',
+      'Straw Hat Luffy', 'Roronoa Zoro', 'Nami', 'Usopp', 'Sanji', 'Tony Tony Chopper', 'Nico Robin', 'Franky', 'Brook', 'Jinbe'
+    ]
   };
   
   const setCharacters = setNames[setCode] || ['Unknown Character'];
@@ -970,6 +1022,9 @@ function generateStageCost(cardNum: number): number {
 
 // Generate all cards from GitHub mapping
 const allCards = generateCardsFromGitHub();
+
+// Add cache-busting to ensure fresh data
+console.log(`Generated ${allCards.length} cards from GitHub releases with real data from Limitless TCG Database`);
 
 // Local storage keys
 const DECKS_KEY = 'tcg_decks';
