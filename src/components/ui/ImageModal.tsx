@@ -214,7 +214,7 @@ export function ImageModal({
         </div>
 
         {/* Contenuto immagine - Mobile responsive */}
-        <div className="flex-1 flex items-center justify-center p-2 sm:p-4 relative">
+        <div className="flex-1 flex items-center justify-center p-2 sm:p-4 relative overflow-hidden">
           {/* Navigazione - Mobile responsive */}
           {hasPrevious && onPrevious && (
             <button
@@ -237,7 +237,7 @@ export function ImageModal({
           )}
 
           {/* Container immagine - Mobile responsive */}
-          <div className="relative max-w-full max-h-full overflow-hidden">
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
             {isLoading && (
               <div className="w-64 h-64 sm:w-96 sm:h-96 bg-white/10 animate-pulse flex items-center justify-center rounded-lg border-2 border-white/20">
                 <div className="w-8 h-8 sm:w-12 sm:h-12 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -257,7 +257,7 @@ export function ImageModal({
               <img
                 src={imageUrl}
                 alt={`${cardName} (${cardNumber})`}
-                className="max-w-full max-h-full object-contain transition-transform duration-200 shadow-2xl"
+                className="max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain transition-transform duration-200 shadow-2xl"
                 style={{
                   transform: `scale(${scale}) rotate(${rotation}deg)`,
                   transformOrigin: 'center'

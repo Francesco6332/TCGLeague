@@ -640,7 +640,7 @@ export function DeckBuilder() {
                                 handleAddCardToDeck(card.id);
                               }
                             }}
-                            itemsPerPage={12}
+                            itemsPerPage={4}
                             showPagination={true}
                             enableModal={true}
                           />

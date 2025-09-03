@@ -22,7 +22,7 @@ export function CardGrid({
   cards,
   onCardClick,
   className = '',
-  itemsPerPage = 10,
+  itemsPerPage = 4,
   showPagination = true,
   enableModal = true
 }: CardGridProps) {
