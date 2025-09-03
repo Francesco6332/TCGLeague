@@ -82,11 +82,11 @@ export function CardGrid({
   return (
     <div className={`${className} overflow-hidden`}>
       {/* Griglia carte - Auto-fit responsive grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 sm:gap-3 md:gap-4 overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 overflow-hidden">
         {currentCards.map((card, index) => (
           <div
             key={`${card.cardNumber}-${index}`}
-            className="relative cursor-pointer group flex items-center justify-center p-1"
+            className="relative cursor-pointer group flex items-center justify-center p-2 sm:p-3"
             onClick={() => openModal(card, index)}
           >
             <LazyCardImage
