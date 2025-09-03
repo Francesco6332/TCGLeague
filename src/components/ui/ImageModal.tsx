@@ -35,7 +35,7 @@ export function ImageModal({
     if (isOpen && cardNumber) {
       setIsLoading(true);
       setHasError(false);
-      setScale(1);
+      setScale(0.55);
       setRotation(0);
       setTriedFormats([]);
       
@@ -108,7 +108,7 @@ export function ImageModal({
   };
 
   const handleReset = () => {
-    setScale(1);
+    setScale(0.55);
     setRotation(0);
   };
 
