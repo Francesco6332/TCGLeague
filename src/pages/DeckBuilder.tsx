@@ -10,7 +10,9 @@ import {
   X,
   CreditCard
 } from 'lucide-react';
-import { CardImage } from '../components/ui/CardImage';
+
+import { LazyCardImage } from '../components/ui/LazyCardImage';
+import { CardGrid } from '../components/ui/CardGrid';
 import { deckService, cardService, type Deck, type Card } from '../services/localCardService';
 
 interface DeckWithCardCount extends Deck {
@@ -25,6 +27,7 @@ export function DeckBuilder() {
   const [filteredCards, setFilteredCards] = useState<Card[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isCardBrowser, setIsCardBrowser] = useState(false);
+  const [isGridView, setIsGridView] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [cardSearchTerm, setCardSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -319,7 +322,7 @@ export function DeckBuilder() {
                 <h3 className="text-lg font-medium text-white mb-2">Leader</h3>
                 <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <div className="flex items-center space-x-3">
-                    <CardImage
+                    <LazyCardImage
                       cardNumber={selectedDeck.leader_card.card_number}
                       cardName={selectedDeck.leader_card.name}
                       size="sm"
@@ -342,7 +345,7 @@ export function DeckBuilder() {
                 <div key={deckCard.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <CardImage
+                      <LazyCardImage
                         cardNumber={deckCard.card?.card_number || ''}
                         cardName={deckCard.card?.name || 'Unknown Card'}
                         size="sm"
@@ -391,9 +394,21 @@ export function DeckBuilder() {
                 <h2 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
                   <Search className="h-5 w-5" />
                   <span>Card Browser</span>
-                  <span className="text-sm text-white/60 ml-auto">
-                    {filteredCards.length} cards available
-                  </span>
+                  <div className="flex items-center space-x-2 ml-auto">
+                    <button
+                      onClick={() => setIsGridView(!isGridView)}
+                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                        isGridView
+                          ? 'bg-blue-500 text-white'
+                          : 'text-white/70 hover:text-white bg-white/10 hover:bg-white/20'
+                      }`}
+                    >
+                      {isGridView ? 'List View' : 'Grid View'}
+                    </button>
+                    <span className="text-sm text-white/60">
+                      {filteredCards.length} cards available
+                    </span>
+                  </div>
                 </h2>
                 <p className="text-sm text-white/60 mb-4">
                   Card data sourced from <a href="https://onepiece.limitlesstcg.com/cards" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Limitless TCG Database</a>
@@ -474,54 +489,75 @@ export function DeckBuilder() {
                     </div>
                   ) : (
                     <>
-                      {filteredCards.map((card) => (
-                        <div key={card.id} className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-white/20 transition-colors">
-                          <div className="flex items-start space-x-3">
-                            <CardImage
-                              cardNumber={card.card_number}
-                              cardName={card.name}
-                              size="sm"
-                              className="flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <div className={`w-3 h-3 rounded-full ${getColorClass(card.color)}`} />
-                                  <div className="font-medium text-white">{card.name}</div>
-                                  <span className={`text-xs font-bold ${getRarityColor(card.rarity)}`}>
-                                    {card.rarity}
-                                  </span>
+                      {isGridView ? (
+                        <CardGrid
+                          cards={filteredCards.map(card => ({
+                            cardNumber: card.card_number,
+                            name: card.name,
+                            quantity: undefined
+                          }))}
+                          onCardClick={(cardNumber) => {
+                            const card = filteredCards.find(c => c.card_number === cardNumber);
+                            if (card) {
+                              handleAddCardToDeck(card.id);
+                            }
+                          }}
+                          itemsPerPage={20}
+                          showPagination={true}
+                          enableModal={true}
+                        />
+                      ) : (
+                        <>
+                          {filteredCards.map((card) => (
+                            <div key={card.id} className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-white/20 transition-colors">
+                              <div className="flex items-start space-x-3">
+                                <LazyCardImage
+                                  cardNumber={card.card_number}
+                                  cardName={card.name}
+                                  size="sm"
+                                  className="flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <div className={`w-3 h-3 rounded-full ${getColorClass(card.color)}`} />
+                                      <div className="font-medium text-white">{card.name}</div>
+                                      <span className={`text-xs font-bold ${getRarityColor(card.rarity)}`}>
+                                        {card.rarity}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => handleAddCardToDeck(card.id)}
+                                      className="btn-primary px-3 py-1 text-sm"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <div className="text-sm text-white/60 mb-1">
+                                    {card.card_number} • {card.set_code} • {card.type} • {card.cost !== null ? `${card.cost} Cost` : 'No Cost'}
+                                  </div>
+                                  {card.effect && (
+                                    <div className="text-xs text-white/50 line-clamp-2">
+                                      {card.effect}
+                                    </div>
+                                  )}
                                 </div>
-                                <button
-                                  onClick={() => handleAddCardToDeck(card.id)}
-                                  className="btn-primary px-3 py-1 text-sm"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </button>
                               </div>
-                              <div className="text-sm text-white/60 mb-1">
-                                {card.card_number} • {card.set_code} • {card.type} • {card.cost !== null ? `${card.cost} Cost` : 'No Cost'}
-                              </div>
-                              {card.effect && (
-                                <div className="text-xs text-white/50 line-clamp-2">
-                                  {card.effect}
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {hasMoreCards && (
-                        <div className="text-center py-4">
-                          <button
-                            onClick={loadMoreCards}
-                            disabled={cardLoading}
-                            className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
-                          >
-                            {cardLoading ? 'Loading...' : 'Load More Cards'}
-                          </button>
-                        </div>
+                          ))}
+                          
+                          {hasMoreCards && (
+                            <div className="text-center py-4">
+                              <button
+                                onClick={loadMoreCards}
+                                disabled={cardLoading}
+                                className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+                              >
+                                {cardLoading ? 'Loading...' : 'Load More Cards'}
+                              </button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   )}

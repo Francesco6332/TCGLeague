@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ImageService } from '../../services/imageService';
 
 interface CardImageProps {
@@ -7,6 +7,7 @@ interface CardImageProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showPlaceholder?: boolean;
+  onClick?: () => void;
 }
 
 export function CardImage({ 
@@ -14,12 +15,14 @@ export function CardImage({
   cardName, 
   className = '', 
   size = 'md',
-  showPlaceholder = true 
+  showPlaceholder = true,
+  onClick
 }: CardImageProps) {
   const [imageUrl, setImageUrl] = useState(ImageService.getCardImageUrl(cardNumber));
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [triedFormats, setTriedFormats] = useState<string[]>([]);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const handleError = () => {
     if (!hasError && showPlaceholder) {
@@ -71,10 +74,11 @@ export function CardImage({
     object-cover object-center
     transition-all duration-200
     hover:border-white/40 hover:shadow-xl hover:scale-105
+    ${onClick ? 'cursor-pointer' : ''}
   `;
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} onClick={onClick}>
       {isLoading && (
         <div className={`${baseClasses} bg-white/10 animate-pulse flex items-center justify-center`}>
           <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -82,9 +86,10 @@ export function CardImage({
       )}
       
       <img
+        ref={imgRef}
         src={imageUrl}
         alt={`${cardName} (${cardNumber})`}
-        className={`${baseClasses} ${isLoading ? 'opacity-0' : 'opacity-100'} ${className}`}
+        className={`${baseClasses} ${isLoading ? 'opacity-0' : 'opacity-100'}`}
         onError={handleError}
         onLoad={handleLoad}
         loading="lazy"

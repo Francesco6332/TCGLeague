@@ -26,7 +26,7 @@ export interface EnvironmentConfig {
 // Default configuration
 const defaultConfig: EnvironmentConfig = {
   digitalOceanSpaces: {
-    endpoint: 'https://tcg-league-images.fra1.digitaloceanspaces.com',
+    endpoint: 'https://tcg-league-images.fra1.cdn.digitaloceanspaces.com',
     bucket: 'tcg-league-images',
     region: 'fra1',
     accessKeyId: '',
