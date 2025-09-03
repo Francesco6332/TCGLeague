@@ -93,12 +93,12 @@ export function LazyCardImage({
     }
   }, [cardNumber, isVisible]);
 
-  // Size classes
+  // Size classes - Mobile responsive
   const sizeClasses = {
-    sm: 'w-16 h-24', // 64x96px
-    md: 'w-24 h-36', // 96x144px
-    lg: 'w-32 h-48', // 128x192px
-    xl: 'w-40 h-60'  // 160x240px
+    sm: 'w-12 h-18 sm:w-16 sm:h-24', // 48x72px mobile, 64x96px desktop
+    md: 'w-16 h-24 sm:w-24 sm:h-36', // 64x96px mobile, 96x144px desktop
+    lg: 'w-20 h-30 sm:w-32 sm:h-48', // 80x120px mobile, 128x192px desktop
+    xl: 'w-24 h-36 sm:w-40 sm:h-60'  // 96x144px mobile, 160x240px desktop
   };
 
   const baseClasses = `
@@ -107,7 +107,8 @@ export function LazyCardImage({
     object-cover object-center
     transition-all duration-200
     hover:border-white/40 hover:shadow-xl hover:scale-105
-    ${onClick ? 'cursor-pointer' : ''}
+    active:scale-95
+    ${onClick ? 'cursor-pointer touch-manipulation' : ''}
   `;
 
   return (
@@ -119,7 +120,7 @@ export function LazyCardImage({
       {/* Placeholder durante il caricamento */}
       {(!isVisible || isLoading) && (
         <div className={`${baseClasses} bg-white/10 animate-pulse flex items-center justify-center`}>
-          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div className="w-4 h-4 sm:w-8 sm:h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
         </div>
       )}
       
@@ -136,14 +137,14 @@ export function LazyCardImage({
       
       {/* Fallback per errori */}
       {hasError && !showPlaceholder && (
-        <div className={`${baseClasses} bg-gradient-to-br from-slate-700 to-slate-800 flex flex-col items-center justify-center text-center p-2`}>
-          <div className="text-xs text-white/70 mb-1">No Image</div>
+        <div className={`${baseClasses} bg-gradient-to-br from-slate-700 to-slate-800 flex flex-col items-center justify-center text-center p-1 sm:p-2`}>
+          <div className="text-xs text-white/70 mb-0.5 sm:mb-1">No Image</div>
           <div className="text-xs text-white/90 font-medium">{cardNumber}</div>
         </div>
       )}
       
-      {/* Card number overlay */}
-      <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded text-shadow">
+      {/* Card number overlay - Mobile responsive */}
+      <div className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 bg-black/60 text-white text-xs px-0.5 sm:px-1 py-0.5 rounded text-shadow">
         {cardNumber}
       </div>
     </div>

@@ -81,8 +81,8 @@ export function CardGrid({
 
   return (
     <div className={className}>
-      {/* Griglia carte */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+      {/* Griglia carte - Mobile responsive */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3 md:gap-4">
         {currentCards.map((card, index) => (
           <div
             key={`${card.cardNumber}-${index}`}
@@ -92,12 +92,12 @@ export function CardGrid({
             <LazyCardImage
               cardNumber={card.cardNumber}
               cardName={card.name}
-              size="md"
+              size="sm"
               className="group-hover:ring-2 group-hover:ring-blue-400 transition-all duration-200"
             />
             
             {card.quantity && card.quantity > 1 && (
-              <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-lg">
                 {card.quantity}
               </div>
             )}
@@ -105,23 +105,24 @@ export function CardGrid({
         ))}
       </div>
 
-      {/* Paginazione */}
+      {/* Paginazione - Mobile responsive */}
       {showPagination && totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-2 mt-8">
+        <div className="flex items-center justify-center space-x-1 sm:space-x-2 mt-4 sm:mt-8">
           <button
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
-            className="p-2 text-white/70 hover:text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 sm:p-2 text-white/70 hover:text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           
-          <div className="flex items-center space-x-1">
+          {/* Mobile: Show only current page and total */}
+          <div className="hidden sm:flex items-center space-x-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 onClick={() => goToPage(page)}
-                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-colors ${
                   page === currentPage
                     ? 'bg-blue-500 text-white'
                     : 'text-white/70 hover:text-white bg-white/10 hover:bg-white/20'
@@ -132,19 +133,26 @@ export function CardGrid({
             ))}
           </div>
           
+          {/* Mobile: Show current page indicator */}
+          <div className="sm:hidden flex items-center space-x-2">
+            <span className="text-white/70 text-sm">
+              {currentPage} / {totalPages}
+            </span>
+          </div>
+          
           <button
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="p-2 text-white/70 hover:text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 sm:p-2 text-white/70 hover:text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
       )}
 
-      {/* Info paginazione */}
+      {/* Info paginazione - Mobile responsive */}
       {showPagination && (
-        <div className="text-center mt-4 text-white/60 text-sm">
+        <div className="text-center mt-2 sm:mt-4 text-white/60 text-xs sm:text-sm">
           Showing {startIndex + 1}-{Math.min(endIndex, cards.length)} of {cards.length} cards
         </div>
       )}
