@@ -384,6 +384,9 @@ export function DeckBuilder() {
                     {filteredCards.length} cards available
                   </span>
                 </h2>
+                <p className="text-sm text-white/60 mb-4">
+                  Card data sourced from <a href="https://onepiece.limitlesstcg.com/cards" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Limitless TCG Database</a>
+                </p>
 
                 {/* Filters */}
                 <div className="space-y-4 mb-6">
