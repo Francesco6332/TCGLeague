@@ -16,6 +16,8 @@ export class ImageService {
       return this.getPlaceholderUrl();
     }
 
+    console.log('Current storage provider:', envConfig.storageProvider);
+
     try {
       switch (envConfig.storageProvider) {
         case STORAGE_PROVIDERS.DIGITALOCEAN_SPACES:
