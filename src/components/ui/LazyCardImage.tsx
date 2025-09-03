@@ -96,7 +96,7 @@ export function LazyCardImage({
   // Size classes - Mobile responsive (increased sizes)
   const sizeClasses = {
     sm: 'w-16 h-24 sm:w-20 sm:h-30', // 64x96px mobile, 80x120px desktop
-    md: 'w-20 h-30 sm:w-28 sm:h-42', // 80x120px mobile, 112x168px desktop
+    md: 'w-full h-full', // Fill container for grid layout
     lg: 'w-24 h-36 sm:w-36 sm:h-54', // 96x144px mobile, 144x216px desktop
     xl: 'w-28 h-42 sm:w-44 sm:h-66'  // 112x168px mobile, 176x264px desktop
   };
@@ -104,7 +104,7 @@ export function LazyCardImage({
   const baseClasses = `
     ${sizeClasses[size]}
     rounded-lg border border-white/20 shadow-lg
-    object-cover object-center
+    object-contain object-center
     transition-all duration-200
     hover:border-white/40 hover:shadow-xl hover:scale-105
     active:scale-95
@@ -120,7 +120,7 @@ export function LazyCardImage({
       {/* Placeholder durante il caricamento */}
       {(!isVisible || isLoading) && (
         <div className={`${baseClasses} bg-white/10 animate-pulse flex items-center justify-center`}>
-          <div className="w-4 h-4 sm:w-8 sm:h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div className="w-4 h-4 sm:w-6 sm:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
         </div>
       )}
       
@@ -139,12 +139,12 @@ export function LazyCardImage({
       {hasError && !showPlaceholder && (
         <div className={`${baseClasses} bg-gradient-to-br from-slate-700 to-slate-800 flex flex-col items-center justify-center text-center p-1 sm:p-2`}>
           <div className="text-xs text-white/70 mb-0.5 sm:mb-1">No Image</div>
-          <div className="text-xs text-white/90 font-medium">{cardNumber}</div>
+          <div className="text-xs text-white/90 font-medium truncate">{cardNumber}</div>
         </div>
       )}
       
       {/* Card number overlay - Mobile responsive */}
-      <div className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 bg-black/60 text-white text-xs px-0.5 sm:px-1 py-0.5 rounded text-shadow">
+      <div className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 bg-black/60 text-white text-xs px-0.5 sm:px-1 py-0.5 rounded text-shadow max-w-[80%] truncate">
         {cardNumber}
       </div>
     </div>
