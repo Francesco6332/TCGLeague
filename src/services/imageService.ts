@@ -59,11 +59,6 @@ export class ImageService {
       hasSecretKey: !!config.secretAccessKey
     });
     
-    if (!config.endpoint || !config.accessKeyId) {
-      console.warn('DigitalOcean Spaces not configured, falling back to GitHub');
-      return this.getGitHubImageUrl(cardNumber);
-    }
-    
     // Extract set code from card number (e.g., "OP01" from "OP01-001")
     const setCode = cardNumber.split('-')[0];
     
