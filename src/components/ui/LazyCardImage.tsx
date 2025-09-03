@@ -58,14 +58,14 @@ export function LazyCardImage({
   const handleError = () => {
     if (!hasError && showPlaceholder) {
       // Try alternative format if we haven't tried it yet
-      if (!triedFormats.includes('jpg') && imageUrl.endsWith('.png')) {
+      if (!triedFormats.includes('jpg') && imageUrl.includes('.png')) {
         const jpgUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'jpg');
         setImageUrl(jpgUrl);
         setTriedFormats(prev => [...prev, 'jpg']);
         return;
       }
       
-      if (!triedFormats.includes('png') && imageUrl.endsWith('.jpg')) {
+      if (!triedFormats.includes('png') && imageUrl.includes('.jpg')) {
         const pngUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'png');
         setImageUrl(pngUrl);
         setTriedFormats(prev => [...prev, 'png']);
@@ -93,12 +93,12 @@ export function LazyCardImage({
     }
   }, [cardNumber, isVisible]);
 
-  // Size classes - Mobile responsive
+  // Size classes - Mobile responsive (increased sizes)
   const sizeClasses = {
-    sm: 'w-12 h-18 sm:w-16 sm:h-24', // 48x72px mobile, 64x96px desktop
-    md: 'w-16 h-24 sm:w-24 sm:h-36', // 64x96px mobile, 96x144px desktop
-    lg: 'w-20 h-30 sm:w-32 sm:h-48', // 80x120px mobile, 128x192px desktop
-    xl: 'w-24 h-36 sm:w-40 sm:h-60'  // 96x144px mobile, 160x240px desktop
+    sm: 'w-16 h-24 sm:w-20 sm:h-30', // 64x96px mobile, 80x120px desktop
+    md: 'w-20 h-30 sm:w-28 sm:h-42', // 80x120px mobile, 112x168px desktop
+    lg: 'w-24 h-36 sm:w-36 sm:h-54', // 96x144px mobile, 144x216px desktop
+    xl: 'w-28 h-42 sm:w-44 sm:h-66'  // 112x168px mobile, 176x264px desktop
   };
 
   const baseClasses = `

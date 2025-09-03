@@ -26,6 +26,7 @@ export function ImageModal({
   const [imageUrl, setImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [triedFormats, setTriedFormats] = useState<string[]>([]);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
 
@@ -34,13 +35,58 @@ export function ImageModal({
     if (isOpen && cardNumber) {
       setIsLoading(true);
       setHasError(false);
-      setImageUrl(ImageService.getCardImageUrl(cardNumber));
       setScale(1);
       setRotation(0);
+      setTriedFormats([]);
+      
+      // Preload the image
+      const newImageUrl = ImageService.getCardImageUrl(cardNumber);
+      const img = new Image();
+      
+      img.onload = () => {
+        setImageUrl(newImageUrl);
+        setIsLoading(false);
+      };
+      
+      img.onerror = () => {
+        // Try alternative format
+        const altUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'jpg');
+        const altImg = new Image();
+        
+        altImg.onload = () => {
+          setImageUrl(altUrl);
+          setIsLoading(false);
+        };
+        
+        altImg.onerror = () => {
+          setHasError(true);
+          setIsLoading(false);
+        };
+        
+        altImg.src = altUrl;
+      };
+      
+      img.src = newImageUrl;
     }
   }, [isOpen, cardNumber]);
 
   const handleError = () => {
+    // Try alternative format if we haven't tried it yet
+    if (!triedFormats.includes('jpg') && imageUrl.includes('.png')) {
+      const jpgUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'jpg');
+      setImageUrl(jpgUrl);
+      setTriedFormats(prev => [...prev, 'jpg']);
+      return;
+    }
+    
+    if (!triedFormats.includes('png') && imageUrl.includes('.jpg')) {
+      const pngUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'png');
+      setImageUrl(pngUrl);
+      setTriedFormats(prev => [...prev, 'png']);
+      return;
+    }
+    
+    // If both formats failed, show error
     setHasError(true);
     setIsLoading(false);
   };
@@ -193,15 +239,17 @@ export function ImageModal({
           {/* Container immagine - Mobile responsive */}
           <div className="relative max-w-full max-h-full overflow-hidden">
             {isLoading && (
-              <div className="w-64 h-64 sm:w-96 sm:h-96 bg-white/10 animate-pulse flex items-center justify-center rounded-lg">
+              <div className="w-64 h-64 sm:w-96 sm:h-96 bg-white/10 animate-pulse flex items-center justify-center rounded-lg border-2 border-white/20">
                 <div className="w-8 h-8 sm:w-12 sm:h-12 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="ml-3 text-white/70 text-sm">Loading image...</div>
               </div>
             )}
             
             {hasError && (
-              <div className="w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-br from-slate-700 to-slate-800 flex flex-col items-center justify-center text-center rounded-lg">
+              <div className="w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-br from-slate-700 to-slate-800 flex flex-col items-center justify-center text-center rounded-lg border-2 border-white/20">
                 <div className="text-white/70 mb-2 text-sm sm:text-base">Image not available</div>
                 <div className="text-white/90 font-medium text-sm sm:text-base">{cardNumber}</div>
+                <div className="text-white/50 text-xs mt-2">Try refreshing or check your connection</div>
               </div>
             )}
             
@@ -209,13 +257,14 @@ export function ImageModal({
               <img
                 src={imageUrl}
                 alt={`${cardName} (${cardNumber})`}
-                className="max-w-full max-h-full object-contain transition-transform duration-200"
+                className="max-w-full max-h-full object-contain transition-transform duration-200 shadow-2xl"
                 style={{
                   transform: `scale(${scale}) rotate(${rotation}deg)`,
                   transformOrigin: 'center'
                 }}
                 onError={handleError}
                 onLoad={handleLoad}
+                crossOrigin="anonymous"
               />
             )}
           </div>

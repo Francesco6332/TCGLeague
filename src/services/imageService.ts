@@ -43,7 +43,17 @@ export class ImageService {
    * @returns Image URL for the card
    */
   static getCardImageUrlWithFormat(cardNumber: string, format: 'png' | 'jpg' = 'png'): string {
-   return this.getCardImageUrl(cardNumber) + `.${format}`;
+    if (!cardNumber) {
+      return this.getPlaceholderUrl();
+    }
+
+    try {
+      const config = envConfig.digitalOceanSpaces;
+      const setCode = cardNumber.split('-')[0];
+      return `${config.endpoint}/${setCode}/${cardNumber}.${format}`;
+    } catch (error) {
+      return this.getPlaceholderUrl();
+    }
   }
 
   /**

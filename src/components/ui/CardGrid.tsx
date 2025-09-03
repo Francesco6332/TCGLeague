@@ -92,7 +92,7 @@ export function CardGrid({
             <LazyCardImage
               cardNumber={card.cardNumber}
               cardName={card.name}
-              size="sm"
+              size="md"
               className="group-hover:ring-2 group-hover:ring-blue-400 transition-all duration-200"
             />
             

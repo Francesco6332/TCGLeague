@@ -380,7 +380,7 @@ export function DeckBuilder() {
                       <LazyCardImage
                         cardNumber={selectedDeck.leader_card.card_number}
                         cardName={selectedDeck.leader_card.name}
-                        size="sm"
+                        size="md"
                         className="flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
@@ -416,7 +416,7 @@ export function DeckBuilder() {
                         <LazyCardImage
                           cardNumber={deckCard.card?.card_number || ''}
                           cardName={deckCard.card?.name || 'Unknown Card'}
-                          size="sm"
+                          size="md"
                           className="flex-shrink-0"
                         />
                         <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${getColorClass(deckCard.card?.color || 'Colorless')}`} />
@@ -652,7 +652,7 @@ export function DeckBuilder() {
                                   <LazyCardImage
                                     cardNumber={card.card_number}
                                     cardName={card.name}
-                                    size="sm"
+                                    size="md"
                                     className="flex-shrink-0"
                                   />
                                   <div className="flex-1 min-w-0">
