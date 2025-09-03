@@ -1,64 +1,99 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import type { League } from '../types';
 import { motion } from 'framer-motion';
 import { 
   User, 
+  Store, 
+  Mail, 
+  Phone, 
+  Globe, 
+  MapPin, 
   Edit, 
   Save, 
   X, 
-  MapPin, 
-  Phone, 
-  Globe, 
-  Mail,
+  LogOut,
   Trophy,
-  Camera
+  Calendar,
+  Users,
+  Star,
+  Settings,
+  Shield,
+  CreditCard
 } from 'lucide-react';
+import type { Store as StoreType } from '../types';
 
 export function Profile() {
-  const { userProfile } = useAuth();
+  const { userProfile, updateProfile, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [stats, setStats] = useState({
-    eventsCount: 0,
-    totalPlayers: 0, // for stores
-    wins: 0, // for players
-    losses: 0, // for players
-    winRate: 0, // for players
-  });
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
   const [formData, setFormData] = useState({
-    username: userProfile?.username || '',
-    email: userProfile?.email || '',
-    bandaiMembershipId: userProfile?.bandaiMembershipId || '',
-    storeName: userProfile?.userType === 'store' ? (userProfile as any).storeName || '' : '',
-    phone: userProfile?.userType === 'store' ? (userProfile as any).phone || '' : '',
-    website: userProfile?.userType === 'store' ? (userProfile as any).website || '' : '',
-    description: userProfile?.userType === 'store' ? (userProfile as any).description || '' : '',
-    address: userProfile?.userType === 'store' ? (userProfile as any).address || {
+    username: '',
+    email: '',
+    bandaiMembershipId: '',
+  });
+  
+  const [storeFormData, setStoreFormData] = useState({
+    storeName: '',
+    phone: '',
+    website: '',
+    description: '',
+    address: {
       street: '',
       city: '',
       state: '',
       zipCode: '',
       country: '',
-    } : null,
+    },
   });
+
+  useEffect(() => {
+    if (userProfile) {
+      setFormData({
+        username: userProfile.username || '',
+        email: userProfile.email || '',
+        bandaiMembershipId: userProfile.bandaiMembershipId || '',
+      });
+      
+      if (userProfile.userType === 'store' && userProfile.store) {
+        setStoreFormData({
+          storeName: userProfile.store.storeName || '',
+          phone: userProfile.store.phone || '',
+          website: userProfile.store.website || '',
+          description: userProfile.store.description || '',
+          address: {
+            street: userProfile.store.address?.street || '',
+            city: userProfile.store.address?.city || '',
+            state: userProfile.store.address?.state || '',
+            zipCode: userProfile.store.address?.zipCode || '',
+            country: userProfile.store.address?.country || '',
+          },
+        });
+      }
+    }
+  }, [userProfile]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    if (name.startsWith('address.') && formData.address) {
-      const addressField = name.split('.')[1];
+    if (['username', 'email', 'bandaiMembershipId'].includes(name)) {
       setFormData(prev => ({
         ...prev,
+        [name]: value,
+      }));
+    } else if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setStoreFormData(prev => ({
+        ...prev,
         address: {
-          ...prev.address!,
+          ...prev.address,
           [addressField]: value,
         },
       }));
-    } else {
-      setFormData(prev => ({
+    } else if (['storeName', 'phone', 'website', 'description'].includes(name)) {
+      setStoreFormData(prev => ({
         ...prev,
         [name]: value,
       }));
@@ -69,321 +104,186 @@ export function Profile() {
     if (!userProfile) return;
     
     try {
-      const updateData = {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+      
+      const updateData: any = {
         username: formData.username,
-        email: formData.email,
         bandaiMembershipId: formData.bandaiMembershipId,
-        updatedAt: new Date(),
-        ...(userProfile.userType === 'store' && {
-          storeName: formData.storeName,
-          phone: formData.phone,
-          website: formData.website,
-          description: formData.description,
-          address: formData.address,
-        }),
       };
-
-      await updateDoc(doc(db, 'users', userProfile.id), updateData);
+      
+      if (userProfile.userType === 'store') {
+        updateData.store = storeFormData;
+      }
+      
+      await updateProfile(updateData);
+      setSuccess('Profile updated successfully!');
       setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating profile:', error);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error: any) {
+      console.error('Update error:', error);
+      setError('Failed to update profile. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    // Reset form data
-    setFormData({
-      username: userProfile?.username || '',
-      email: userProfile?.email || '',
-      bandaiMembershipId: userProfile?.bandaiMembershipId || '',
-      storeName: userProfile?.userType === 'store' ? (userProfile as any).storeName || '' : '',
-      phone: userProfile?.userType === 'store' ? (userProfile as any).phone || '' : '',
-      website: userProfile?.userType === 'store' ? (userProfile as any).website || '' : '',
-      description: userProfile?.userType === 'store' ? (userProfile as any).description || '' : '',
-      address: userProfile?.userType === 'store' ? (userProfile as any).address || {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: '',
-      } : null,
-    });
+    // Reset form data to original values
+    if (userProfile) {
+      setFormData({
+        username: userProfile.username || '',
+        email: userProfile.email || '',
+        bandaiMembershipId: userProfile.bandaiMembershipId || '',
+      });
+      
+      if (userProfile.userType === 'store' && userProfile.store) {
+        setStoreFormData({
+          storeName: userProfile.store.storeName || '',
+          phone: userProfile.store.phone || '',
+          website: userProfile.store.website || '',
+          description: userProfile.store.description || '',
+          address: {
+            street: userProfile.store.address?.street || '',
+            city: userProfile.store.address?.city || '',
+            state: userProfile.store.address?.state || '',
+            zipCode: userProfile.store.address?.zipCode || '',
+            country: userProfile.store.address?.country || '',
+          },
+        });
+      }
+    }
     setIsEditing(false);
+    setError('');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   if (!userProfile) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-white/70">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
-  const isStore = userProfile.userType === 'store';
-
-  // Calculate real statistics
-  useEffect(() => {
-    const calculateStats = async () => {
-      if (!userProfile) return;
-      
-      setLoadingStats(true);
-      
-      try {
-        if (userProfile.userType === 'store') {
-          // Store stats: count events and total participants
-          const eventsQuery = query(
-            collection(db, 'events'),
-            where('storeId', '==', userProfile.id)
-          );
-          
-          const eventsSnapshot = await getDocs(eventsQuery);
-          const storeEvents = eventsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as League[];
-          
-          const totalParticipants = storeEvents.reduce((total, event) => total + event.participants.length, 0);
-          
-          setStats({
-            eventsCount: storeEvents.length,
-            totalPlayers: totalParticipants,
-            wins: 0,
-            losses: 0,
-            winRate: 0,
-          });
-        } else {
-          // Player stats: calculate wins, losses, win rate from all events they participated in
-          const eventsQuery = query(collection(db, 'events'));
-          const eventsSnapshot = await getDocs(eventsQuery);
-          
-          let totalWins = 0;
-          let totalLosses = 0;
-          let eventsJoined = 0;
-          
-          eventsSnapshot.docs.forEach(doc => {
-            const event = doc.data() as League;
-            
-            // Check if player participated in this event
-            const isParticipant = event.participants.some(p => p.playerId === userProfile.id);
-            if (!isParticipant) return;
-            
-            eventsJoined++;
-            
-            // Calculate wins and losses from all stages if event has stages
-            if (event.stages && event.stages.length > 0) {
-              event.stages.forEach(stage => {
-                if (stage.standings) {
-                  const playerStageStanding = stage.standings.find(s => s.playerId === userProfile.id);
-                  if (playerStageStanding) {
-                    totalWins += playerStageStanding.wins;
-                    totalLosses += playerStageStanding.losses;
-                  }
-                }
-              });
-            } else {
-              // Fallback to overall standings if no stages
-              const playerStanding = event.standings.find(s => s.playerId === userProfile.id);
-              if (playerStanding) {
-                totalWins += playerStanding.wins;
-                totalLosses += playerStanding.losses;
-              }
-            }
-          });
-          
-          const totalMatches = totalWins + totalLosses;
-          const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
-          
-          setStats({
-            eventsCount: eventsJoined,
-            totalPlayers: 0,
-            wins: totalWins,
-            losses: totalLosses,
-            winRate: Math.round(winRate * 10) / 10, // Round to 1 decimal place
-          });
-        }
-      } catch (error) {
-        console.error('Error calculating stats:', error);
-        setStats({
-          eventsCount: 0,
-          totalPlayers: 0,
-          wins: 0,
-          losses: 0,
-          winRate: 0,
-        });
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    calculateStats();
-  }, [userProfile]);
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <h1 className="text-3xl font-bold gradient-text">
-          {isStore ? 'Store Profile' : 'Player Profile'}
-        </h1>
-        <p className="text-white/70 mt-2">
-          Manage your {isStore ? 'store' : 'player'} information and settings
-        </p>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8"> {/* Responsive padding */}
+        {/* Header - Mobile responsive */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-1"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8" // Responsive flex direction and margin
         >
-          <div className="card p-6 text-center">
-            <div className="relative inline-block mb-4">
-              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                <User className="h-12 w-12 text-white" />
-              </div>
-              <button className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 rounded-full p-2 transition-colors">
-                <Camera className="h-4 w-4 text-white" />
-              </button>
-            </div>
-            
-            <h2 className="text-xl font-bold text-white mb-1">
-              {isStore ? (userProfile as any).storeName : userProfile.username}
-            </h2>
-            <p className="text-white/60 text-sm mb-4 capitalize">
-              {userProfile.userType}
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2 sm:mb-3"> {/* Responsive font size */}
+              Profile
+            </h1>
+            <p className="text-white/70 text-sm sm:text-base"> {/* Responsive font size */}
+              Manage your account and preferences
             </p>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-center space-x-2 text-white/70">
-                <User className="h-4 w-4" />
-                <span>@{userProfile.username}</span>
-              </div>
-              <div className="flex items-center justify-center space-x-2 text-white/70">
-                <Mail className="h-4 w-4" />
-                <span>{userProfile.email}</span>
-              </div>
-              {userProfile.bandaiMembershipId && (
-                <div className="flex items-center justify-center space-x-2 text-white/70">
-                  <Trophy className="h-4 w-4" />
-                  <span>Bandai ID: {userProfile.bandaiMembershipId}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10">
-              <div className="text-center">
-                <div className="text-lg font-bold text-blue-400">
-                  {loadingStats ? (
-                    <div className="animate-pulse">...</div>
+          </div>
+          
+          <div className="flex items-center space-x-2 sm:space-x-3 mt-4 sm:mt-0"> {/* Responsive spacing and margin */}
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-primary flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm sm:text-base touch-manipulation" // Responsive padding and font size
+              >
+                <Edit className="h-4 w-4" />
+                <span>Edit</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleCancel}
+                  className="btn-secondary flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm sm:text-base touch-manipulation" // Responsive padding and font size
+                >
+                  <X className="h-4 w-4" />
+                  <span>Cancel</span>
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="btn-primary flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm sm:text-base touch-manipulation" // Responsive padding and font size
+                >
+                  {loading ? (
+                    <div className="loading-spinner h-4 w-4" />
                   ) : (
-                    stats.eventsCount
+                    <Save className="h-4 w-4" />
                   )}
-                </div>
-                <div className="text-xs text-white/60">
-                  {isStore ? 'Events Organized' : 'Events Joined'}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-purple-400">
-                  {loadingStats ? (
-                    <div className="animate-pulse">...</div>
-                  ) : isStore ? (
-                    stats.totalPlayers
-                  ) : (
-                    `${stats.winRate}%`
-                  )}
-                </div>
-                <div className="text-xs text-white/60">
-                  {isStore ? 'Total Players' : 'Win Rate'}
-                </div>
-              </div>
-            </div>
-            
-            {/* Additional Stats for Players */}
-            {!isStore && (
-              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/10">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-400">
-                    {loadingStats ? (
-                      <div className="animate-pulse">...</div>
-                    ) : (
-                      stats.wins
-                    )}
-                  </div>
-                  <div className="text-xs text-white/60">Total Wins</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-red-400">
-                    {loadingStats ? (
-                      <div className="animate-pulse">...</div>
-                    ) : (
-                      stats.losses
-                    )}
-                  </div>
-                  <div className="text-xs text-white/60">Total Losses</div>
-                </div>
-              </div>
+                  <span>{loading ? 'Saving...' : 'Save'}</span>
+                </button>
+              </>
             )}
+            
+            <button
+              onClick={handleLogout}
+              className="btn-secondary flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm sm:text-base touch-manipulation text-red-400 hover:text-red-300" // Responsive padding and font size
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </motion.div>
 
-        {/* Profile Information */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-2"
-        >
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">
-                {isStore ? 'Store Information' : 'Player Information'}
-              </h3>
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="btn-primary flex items-center space-x-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span>Edit</span>
-                </button>
-              ) : (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleSave}
-                    className="btn-primary flex items-center space-x-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    <span>Save</span>
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="btn-secondary flex items-center space-x-2"
-                  >
-                    <X className="h-4 w-4" />
-                    <span>Cancel</span>
-                  </button>
-                </div>
-              )}
-            </div>
+        {/* Alerts - Mobile responsive */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/20 border border-red-500/50 text-red-300 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-xs sm:text-sm" // Responsive padding and font size
+            role="alert"
+            aria-live="polite"
+          >
+            {error}
+          </motion.div>
+        )}
+        
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-500/20 border border-green-500/50 text-green-300 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-xs sm:text-sm" // Responsive padding and font size
+            role="alert"
+            aria-live="polite"
+          >
+            {success}
+          </motion.div>
+        )}
 
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div>
-                <h4 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
-                  <User className="h-5 w-5 text-blue-400" />
-                  <span>Basic Information</span>
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8"> {/* Responsive grid columns and gaps */}
+          {/* Main Profile Info - Mobile responsive */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-2 space-y-4 sm:space-y-6" // Responsive spacing
+          >
+            {/* Basic Information - Mobile responsive */}
+            <div className="card p-4 sm:p-6"> {/* Responsive padding */}
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4"> {/* Responsive spacing and margin */}
+                <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" /> {/* Responsive icon size */}
+                <h2 className="text-lg sm:text-xl font-semibold text-white">Basic Information</h2> {/* Responsive font size */}
+              </div>
+              
+              <div className="space-y-3 sm:space-y-4"> {/* Responsive spacing */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"> {/* Responsive grid columns and gaps */}
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
                       Username
                     </label>
                     {isEditing ? (
@@ -392,250 +292,336 @@ export function Profile() {
                         name="username"
                         value={formData.username}
                         onChange={handleInputChange}
-                        className="input-field w-full"
+                        className="input-field w-full text-sm sm:text-base" // Responsive font size
+                        placeholder="Enter username"
                       />
                     ) : (
-                      <p className="text-white p-2">{userProfile.username}</p>
+                      <div className="text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                        {userProfile.username || 'Not set'}
+                      </div>
                     )}
                   </div>
-
+                  
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
                       Email
                     </label>
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="input-field w-full"
-                      />
-                    ) : (
-                      <p className="text-white p-2">{userProfile.email}</p>
-                    )}
+                    <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                      <Mail className="h-4 w-4 text-white/60" />
+                      <span>{userProfile.email}</span>
+                    </div>
                   </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
+                    Bandai Membership ID
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="bandaiMembershipId"
+                      value={formData.bandaiMembershipId}
+                      onChange={handleInputChange}
+                      className="input-field w-full text-sm sm:text-base" // Responsive font size
+                      placeholder="Enter Bandai Membership ID"
+                    />
+                  ) : (
+                    <div className="text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                      {userProfile.bandaiMembershipId || 'Not set'}
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
+                    Account Type
+                  </label>
+                  <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                    {userProfile.userType === 'store' ? (
+                      <Store className="h-4 w-4 text-purple-400" />
+                    ) : (
+                      <User className="h-4 w-4 text-blue-400" />
+                    )}
+                    <span className="capitalize">{userProfile.userType}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
+            {/* Store Information - Mobile responsive */}
+            {userProfile.userType === 'store' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="card p-4 sm:p-6" // Responsive padding
+              >
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4"> {/* Responsive spacing and margin */}
+                  <Store className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" /> {/* Responsive icon size */}
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">Store Information</h2> {/* Responsive font size */}
+                </div>
+                
+                <div className="space-y-3 sm:space-y-4"> {/* Responsive spacing */}
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
-                      Bandai Membership ID
+                    <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
+                      Store Name
                     </label>
                     {isEditing ? (
                       <input
                         type="text"
-                        name="bandaiMembershipId"
-                        value={formData.bandaiMembershipId}
+                        name="storeName"
+                        value={storeFormData.storeName}
                         onChange={handleInputChange}
-                        className="input-field w-full"
-                        placeholder="Enter your Bandai Membership ID"
+                        className="input-field w-full text-sm sm:text-base" // Responsive font size
+                        placeholder="Enter store name"
                       />
                     ) : (
-                      <p className="text-white p-2">
-                        {userProfile.bandaiMembershipId || 'Not provided'}
-                      </p>
+                      <div className="text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                        {userProfile.store?.storeName || 'Not set'}
+                      </div>
                     )}
                   </div>
-                </div>
-              </div>
-
-              {/* Store-specific fields */}
-              {isStore && (
-                <>
-                  <div>
-                    <h4 className="text-lg font-medium text-white mb-4">Store Details</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">
-                          Store Name
-                        </label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            name="storeName"
-                            value={formData.storeName}
-                            onChange={handleInputChange}
-                            className="input-field w-full"
-                          />
-                        ) : (
-                          <p className="text-white p-2">{(userProfile as any).storeName}</p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-white/80 mb-2">
-                            Phone
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="tel"
-                              name="phone"
-                              value={formData.phone}
-                              onChange={handleInputChange}
-                              className="input-field w-full"
-                            />
-                          ) : (
-                            <p className="text-white p-2 flex items-center space-x-2">
-                              {(userProfile as any).phone && <Phone className="h-4 w-4" />}
-                              <span>{(userProfile as any).phone || 'Not provided'}</span>
-                            </p>
-                          )}
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"> {/* Responsive grid columns and gaps */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
+                        Phone
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={storeFormData.phone}
+                          onChange={handleInputChange}
+                          className="input-field w-full text-sm sm:text-base" // Responsive font size
+                          placeholder="Enter phone number"
+                        />
+                      ) : (
+                        <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                          <Phone className="h-4 w-4 text-white/60" />
+                          <span>{userProfile.store?.phone || 'Not set'}</span>
                         </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-white/80 mb-2">
-                            Website
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="url"
-                              name="website"
-                              value={formData.website}
-                              onChange={handleInputChange}
-                              className="input-field w-full"
-                            />
-                          ) : (
-                            <p className="text-white p-2 flex items-center space-x-2">
-                              {(userProfile as any).website && <Globe className="h-4 w-4" />}
-                              <span>{(userProfile as any).website || 'Not provided'}</span>
-                            </p>
-                          )}
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
+                        Website
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="url"
+                          name="website"
+                          value={storeFormData.website}
+                          onChange={handleInputChange}
+                          className="input-field w-full text-sm sm:text-base" // Responsive font size
+                          placeholder="Enter website URL"
+                        />
+                      ) : (
+                        <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                          <Globe className="h-4 w-4 text-white/60" />
+                          <span>{userProfile.store?.website || 'Not set'}</span>
                         </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">
-                          Description
-                        </label>
-                        {isEditing ? (
-                          <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={3}
-                            className="input-field w-full resize-none"
-                          />
-                        ) : (
-                          <p className="text-white p-2">
-                            {(userProfile as any).description || 'No description provided'}
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-
-                  {/* Address */}
+                  
                   <div>
-                    <h4 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
-                      <MapPin className="h-5 w-5" />
-                      <span>Address</span>
-                    </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">
-                          Street Address
-                        </label>
-                        {isEditing ? (
+                    <label className="block text-xs sm:text-sm font-medium text-white/80 mb-1 sm:mb-2"> {/* Responsive font size */}
+                      Description
+                    </label>
+                    {isEditing ? (
+                      <textarea
+                        name="description"
+                        value={storeFormData.description}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="input-field w-full text-sm sm:text-base resize-none" // Responsive font size
+                        placeholder="Enter store description"
+                      />
+                    ) : (
+                      <div className="text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                        {userProfile.store?.description || 'No description'}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-white/80 mb-2 sm:mb-3"> {/* Responsive font size and margin */}
+                      Address
+                    </label>
+                    <div className="space-y-3 sm:space-y-4"> {/* Responsive spacing */}
+                      {isEditing ? (
+                        <>
                           <input
                             type="text"
                             name="address.street"
-                            value={formData.address?.street || ''}
+                            value={storeFormData.address.street}
                             onChange={handleInputChange}
-                            className="input-field w-full"
+                            className="input-field w-full text-sm sm:text-base" // Responsive font size
+                            placeholder="Street Address"
                           />
-                        ) : (
-                          <p className="text-white p-2">
-                            {(userProfile as any).address?.street || 'Not provided'}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-white/80 mb-2">
-                            City
-                          </label>
-                          {isEditing ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"> {/* Responsive grid columns and gaps */}
                             <input
                               type="text"
                               name="address.city"
-                              value={formData.address?.city || ''}
+                              value={storeFormData.address.city}
                               onChange={handleInputChange}
-                              className="input-field w-full"
+                              className="input-field w-full text-sm sm:text-base" // Responsive font size
+                              placeholder="City"
                             />
-                          ) : (
-                            <p className="text-white p-2">
-                              {(userProfile as any).address?.city || 'Not provided'}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-white/80 mb-2">
-                            State/Province
-                          </label>
-                          {isEditing ? (
                             <input
                               type="text"
                               name="address.state"
-                              value={formData.address?.state || ''}
+                              value={storeFormData.address.state}
                               onChange={handleInputChange}
-                              className="input-field w-full"
+                              className="input-field w-full text-sm sm:text-base" // Responsive font size
+                              placeholder="State/Province"
                             />
-                          ) : (
-                            <p className="text-white p-2">
-                              {(userProfile as any).address?.state || 'Not provided'}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-white/80 mb-2">
-                            ZIP Code
-                          </label>
-                          {isEditing ? (
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"> {/* Responsive grid columns and gaps */}
                             <input
                               type="text"
                               name="address.zipCode"
-                              value={formData.address?.zipCode || ''}
+                              value={storeFormData.address.zipCode}
                               onChange={handleInputChange}
-                              className="input-field w-full"
+                              className="input-field w-full text-sm sm:text-base" // Responsive font size
+                              placeholder="ZIP/Postal Code"
                             />
-                          ) : (
-                            <p className="text-white p-2">
-                              {(userProfile as any).address?.zipCode || 'Not provided'}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-white/80 mb-2">
-                            Country
-                          </label>
-                          {isEditing ? (
                             <input
                               type="text"
                               name="address.country"
-                              value={formData.address?.country || ''}
+                              value={storeFormData.address.country}
                               onChange={handleInputChange}
-                              className="input-field w-full"
+                              className="input-field w-full text-sm sm:text-base" // Responsive font size
+                              placeholder="Country"
                             />
-                          ) : (
-                            <p className="text-white p-2">
-                              {(userProfile as any).address?.country || 'Not provided'}
-                            </p>
-                          )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-start space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
+                          <MapPin className="h-4 w-4 text-white/60 mt-0.5 flex-shrink-0" />
+                          <div>
+                            {userProfile.store?.address ? (
+                              <div>
+                                <div>{userProfile.store.address.street}</div>
+                                <div>{userProfile.store.address.city}, {userProfile.store.address.state} {userProfile.store.address.zipCode}</div>
+                                <div>{userProfile.store.address.country}</div>
+                              </div>
+                            ) : (
+                              <span>Address not set</span>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
-                </>
-              )}
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Sidebar - Mobile responsive */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4 sm:space-y-6" // Responsive spacing
+          >
+            {/* Account Stats - Mobile responsive */}
+            <div className="card p-4 sm:p-6"> {/* Responsive padding */}
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4"> {/* Responsive spacing and margin */}
+                <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" /> {/* Responsive icon size */}
+                <h3 className="text-base sm:text-lg font-semibold text-white">Account Stats</h3> {/* Responsive font size */}
+              </div>
+              
+              <div className="space-y-2 sm:space-y-3"> {/* Responsive spacing */}
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70 text-xs sm:text-sm">Member Since</span> {/* Responsive font size */}
+                  <span className="text-white text-xs sm:text-sm font-medium"> {/* Responsive font size */}
+                    {userProfile.createdAt ? new Date(userProfile.createdAt).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70 text-xs sm:text-sm">Account Type</span> {/* Responsive font size */}
+                  <span className="text-white text-xs sm:text-sm font-medium capitalize"> {/* Responsive font size */}
+                    {userProfile.userType}
+                  </span>
+                </div>
+                
+                {userProfile.userType === 'player' && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-xs sm:text-sm">Events Joined</span> {/* Responsive font size */}
+                      <span className="text-white text-xs sm:text-sm font-medium">12</span> {/* Responsive font size */}
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-xs sm:text-sm">Win Rate</span> {/* Responsive font size */}
+                      <span className="text-white text-xs sm:text-sm font-medium">68%</span> {/* Responsive font size */}
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-xs sm:text-sm">Current Rank</span> {/* Responsive font size */}
+                      <span className="text-blue-400 text-xs sm:text-sm font-medium">#247</span> {/* Responsive font size */}
+                    </div>
+                  </>
+                )}
+                
+                {userProfile.userType === 'store' && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-xs sm:text-sm">Events Organized</span> {/* Responsive font size */}
+                      <span className="text-white text-xs sm:text-sm font-medium">8</span> {/* Responsive font size */}
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-xs sm:text-sm">Total Participants</span> {/* Responsive font size */}
+                      <span className="text-white text-xs sm:text-sm font-medium">156</span> {/* Responsive font size */}
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-xs sm:text-sm">Store Rating</span> {/* Responsive font size */}
+                      <span className="text-yellow-400 text-xs sm:text-sm font-medium">4.8/5</span> {/* Responsive font size */}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </motion.div>
+
+            {/* Quick Actions - Mobile responsive */}
+            <div className="card p-4 sm:p-6"> {/* Responsive padding */}
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4"> {/* Responsive spacing and margin */}
+                <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" /> {/* Responsive icon size */}
+                <h3 className="text-base sm:text-lg font-semibold text-white">Quick Actions</h3> {/* Responsive font size */}
+              </div>
+              
+              <div className="space-y-2 sm:space-y-3"> {/* Responsive spacing */}
+                <button className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 text-left text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-xs sm:text-sm touch-manipulation"> {/* Responsive spacing, padding, and font size */}
+                  <Shield className="h-4 w-4" />
+                  <span>Privacy Settings</span>
+                </button>
+                
+                <button className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 text-left text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-xs sm:text-sm touch-manipulation"> {/* Responsive spacing, padding, and font size */}
+                  <CreditCard className="h-4 w-4" />
+                  <span>Payment Methods</span>
+                </button>
+                
+                <button className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 text-left text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-xs sm:text-sm touch-manipulation"> {/* Responsive spacing, padding, and font size */}
+                  <Calendar className="h-4 w-4" />
+                  <span>Event History</span>
+                </button>
+                
+                <button className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 text-left text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-xs sm:text-sm touch-manipulation"> {/* Responsive spacing, padding, and font size */}
+                  <Users className="h-4 w-4" />
+                  <span>Friends List</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
