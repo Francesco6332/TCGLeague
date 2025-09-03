@@ -34,7 +34,7 @@ export function DeckBuilder() {
   const [cardLoading, setCardLoading] = useState(false);
   const [hasMoreCards, setHasMoreCards] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-    
+  
   // Card filters
   const [selectedSet, setSelectedSet] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
@@ -46,20 +46,20 @@ export function DeckBuilder() {
   const [newDeckFormat, setNewDeckFormat] = useState<'Standard' | 'Limited' | 'Championship' | 'Casual'>('Standard');
 
   const sets = [
-      // Main sets
-      'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10', 'OP11', 'OP12', 'OP13',
-      // Starter decks
-      'ST01', 'ST02', 'ST03', 'ST04', 'ST05', 'ST06', 'ST07', 'ST08', 'ST09', 'ST10',
-      'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST16', 'ST17', 'ST18', 'ST19', 'ST20',
-      'ST21', 'ST22', 'ST23', 'ST24', 'ST25', 'ST26', 'ST27', 'ST28',
-      // Extra boosters
-      'EB1', 'EB2', 'EB02', 'EB03',
-      // Promotional sets
-      'PRB01', 'PRB02'
-    ];
-    const colors = ['Red', 'Blue', 'Green', 'Purple', 'Yellow', 'Black', 'Colorless'];
-    const types = ['Leader', 'Character', 'Event', 'Stage', 'DON!!'];
-    const rarities = ['C', 'UC', 'R', 'SR', 'SEC', 'L', 'P'];
+    // Main sets
+    'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10', 'OP11', 'OP12', 'OP13',
+    // Starter decks
+    'ST01', 'ST02', 'ST03', 'ST04', 'ST05', 'ST06', 'ST07', 'ST08', 'ST09', 'ST10',
+    'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST16', 'ST17', 'ST18', 'ST19', 'ST20',
+    'ST21', 'ST22', 'ST23', 'ST24', 'ST25', 'ST26', 'ST27', 'ST28',
+    // Extra boosters
+    'EB1', 'EB2', 'EB02', 'EB03',
+    // Promotional sets
+    'PRB01', 'PRB02'
+  ];
+  const colors = ['Red', 'Blue', 'Green', 'Purple', 'Yellow', 'Black', 'Colorless'];
+  const types = ['Leader', 'Character', 'Event', 'Stage', 'DON!!'];
+  const rarities = ['C', 'UC', 'R', 'SR', 'SEC', 'L', 'P'];
 
   useEffect(() => {
     fetchDecks();
@@ -76,202 +76,200 @@ export function DeckBuilder() {
   }, [cards, cardSearchTerm]);
 
   const fetchDecks = async () => {
-      if (!userProfile) return;
+    if (!userProfile) return;
 
-      try {
-        setLoading(true);
-        const userDecks = await deckService.getUserDecks(userProfile.id);
-        
-        // Calculate total cards for each deck
-        const decksWithCounts = userDecks.map(deck => {
-          const totalCards = deck.deck_cards?.reduce((sum, deckCard) => sum + deckCard.quantity, 0) || 0;
-          return { ...deck, total_cards: totalCards };
-        });
-        
-        setDecks(decksWithCounts);
-      } catch (error) {
-        console.error('Error fetching decks:', error);
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      const userDecks = await deckService.getUserDecks(userProfile.id);
+      
+      // Calculate total cards for each deck
+      const decksWithCounts = userDecks.map(deck => {
+        const totalCards = deck.deck_cards?.reduce((sum, deckCard) => sum + deckCard.quantity, 0) || 0;
+        return { ...deck, total_cards: totalCards };
+      });
+      
+      setDecks(decksWithCounts);
+    } catch (error) {
+      console.error('Error fetching decks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCards = async () => {
+    try {
+      setCardLoading(true);
+      console.log('Fetching cards with filters:', {
+        set: selectedSet,
+        color: selectedColor,
+        type: selectedType,
+        rarity: selectedRarity
+      });
+      
+      const fetchedCards = await cardService.getCards({
+        set: selectedSet || undefined,
+        color: selectedColor || undefined,
+        type: selectedType || undefined,
+        rarity: selectedRarity || undefined,
+        limit: 500 // Show more cards from GitHub releases
+      });
+      
+      console.log('Fetched cards:', fetchedCards.length);
+      console.log('Sample fetched cards:', fetchedCards.slice(0, 3));
+      
+      setCards(fetchedCards);
+      setHasMoreCards(fetchedCards.length === 500);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Error fetching cards:', error);
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
+  const loadMoreCards = async () => {
+    try {
+      setCardLoading(true);
+      const offset = currentPage * 500;
+      const additionalCards = await cardService.getCards({
+        set: selectedSet || undefined,
+        color: selectedColor || undefined,
+        type: selectedType || undefined,
+        rarity: selectedRarity || undefined,
+        limit: 500,
+        offset
+      });
+      
+      if (additionalCards.length > 0) {
+        setCards(prev => [...prev, ...additionalCards]);
+        setCurrentPage(prev => prev + 1);
+        setHasMoreCards(additionalCards.length === 500);
+      } else {
+        setHasMoreCards(false);
       }
-    };
+    } catch (error) {
+      console.error('Error loading more cards:', error);
+    } finally {
+      setCardLoading(false);
+    }
+  };
 
-    const fetchCards = async () => {
-      try {
-        setCardLoading(true);
-        console.log('Fetching cards with filters:', {
-          set: selectedSet,
-          color: selectedColor,
-          type: selectedType,
-          rarity: selectedRarity
-        });
-        
-        const fetchedCards = await cardService.getCards({
-          set: selectedSet || undefined,
-          color: selectedColor || undefined,
-          type: selectedType || undefined,
-          rarity: selectedRarity || undefined,
-          limit: 500 // Show more cards from GitHub releases
-        });
-        
-        console.log('Fetched cards:', fetchedCards.length);
-        console.log('Sample fetched cards:', fetchedCards.slice(0, 3));
-        
-        setCards(fetchedCards);
-        setHasMoreCards(fetchedCards.length === 500);
-        setCurrentPage(1);
-      } catch (error) {
-        console.error('Error fetching cards:', error);
-      } finally {
-        setCardLoading(false);
+  const filterCards = () => {
+    if (!cardSearchTerm) {
+      setFilteredCards(cards);
+      return;
+    }
+
+    const filtered = cards.filter(card =>
+      card.name.toLowerCase().includes(cardSearchTerm.toLowerCase()) ||
+      card.effect?.toLowerCase().includes(cardSearchTerm.toLowerCase()) ||
+      card.card_number.toLowerCase().includes(cardSearchTerm.toLowerCase())
+    );
+    setFilteredCards(filtered);
+  };
+
+  const handleCreateDeck = async () => {
+    if (!userProfile || !newDeckName.trim()) return;
+
+    try {
+      const newDeck = await deckService.createDeck({
+        user_id: userProfile.id,
+        name: newDeckName.trim(),
+        format: newDeckFormat
+      });
+
+      setDecks(prev => [{ ...newDeck, total_cards: 0 }, ...prev]);
+      setNewDeckName('');
+      setIsCreating(false);
+    } catch (error) {
+      console.error('Error creating deck:', error);
+    }
+  };
+
+  const handleDeleteDeck = async (deckId: string) => {
+    if (!confirm('Are you sure you want to delete this deck?')) return;
+
+    try {
+      await deckService.deleteDeck(deckId);
+      setDecks(prev => prev.filter(deck => deck.id !== deckId));
+      if (selectedDeck?.id === deckId) {
+        setSelectedDeck(null);
       }
-    };
+    } catch (error) {
+      console.error('Error deleting deck:', error);
+    }
+  };
 
-    const loadMoreCards = async () => {
-      try {
-        setCardLoading(true);
-        const offset = currentPage * 500;
-        const additionalCards = await cardService.getCards({
-          set: selectedSet || undefined,
-          color: selectedColor || undefined,
-          type: selectedType || undefined,
-          rarity: selectedRarity || undefined,
-          limit: 500,
-          offset
-        });
-        
-        if (additionalCards.length > 0) {
-          setCards(prev => [...prev, ...additionalCards]);
-          setCurrentPage(prev => prev + 1);
-          setHasMoreCards(additionalCards.length === 500);
-        } else {
-          setHasMoreCards(false);
-        }
-      } catch (error) {
-        console.error('Error loading more cards:', error);
-      } finally {
-        setCardLoading(false);
-      }
-    };
+  const handleAddCardToDeck = async (cardId: string) => {
+    if (!selectedDeck) return;
 
-    const filterCards = () => {
-      if (!cardSearchTerm) {
-        setFilteredCards(cards);
-        return;
-      }
+    try {
+      await deckService.addCardToDeck(selectedDeck.id, cardId, 1);
+      // Refresh the selected deck
+      const updatedDeck = await deckService.getDeck(selectedDeck.id);
+      setSelectedDeck(updatedDeck);
+      
+      // Update deck count in list
+      setDecks(prev => prev.map(deck => 
+        deck.id === selectedDeck.id 
+          ? { ...deck, total_cards: (deck.total_cards || 0) + 1 }
+          : deck
+      ));
+    } catch (error) {
+      console.error('Error adding card to deck:', error);
+    }
+  };
 
-      const filtered = cards.filter(card =>
-        card.name.toLowerCase().includes(cardSearchTerm.toLowerCase()) ||
-        card.effect?.toLowerCase().includes(cardSearchTerm.toLowerCase()) ||
-        card.card_number.toLowerCase().includes(cardSearchTerm.toLowerCase())
-      );
-      setFilteredCards(filtered);
-    };
+  const handleRemoveCardFromDeck = async (cardId: string) => {
+    if (!selectedDeck) return;
 
-    const handleCreateDeck = async () => {
-      if (!userProfile || !newDeckName.trim()) return;
+    try {
+      await deckService.removeCardFromDeck(selectedDeck.id, cardId, 1);
+      // Refresh the selected deck
+      const updatedDeck = await deckService.getDeck(selectedDeck.id);
+      setSelectedDeck(updatedDeck);
+      
+      // Update deck count in list
+      setDecks(prev => prev.map(deck => 
+        deck.id === selectedDeck.id 
+          ? { ...deck, total_cards: Math.max(0, (deck.total_cards || 0) - 1) }
+          : deck
+      ));
+    } catch (error) {
+      console.error('Error removing card from deck:', error);
+    }
+  };
 
-      try {
-        const newDeck = await deckService.createDeck({
-          user_id: userProfile.id,
-          name: newDeckName.trim(),
-          format: newDeckFormat
-        });
+  const getColorClass = (color: string) => {
+    switch (color) {
+      case 'Red': return 'bg-red-500';
+      case 'Blue': return 'bg-blue-500';
+      case 'Green': return 'bg-green-500';
+      case 'Purple': return 'bg-purple-500';
+      case 'Yellow': return 'bg-yellow-500';
+      case 'Black': return 'bg-gray-800';
+      default: return 'bg-gray-500';
+    }
+  };
 
-        setDecks(prev => [{ ...newDeck, total_cards: 0 }, ...prev]);
-        setNewDeckName('');
-        setIsCreating(false);
-      } catch (error) {
-        console.error('Error creating deck:', error);
-      }
-    };
-
-    const handleDeleteDeck = async (deckId: string) => {
-      if (!confirm('Are you sure you want to delete this deck?')) return;
-
-      try {
-        await deckService.deleteDeck(deckId);
-        setDecks(prev => prev.filter(deck => deck.id !== deckId));
-        if (selectedDeck?.id === deckId) {
-          setSelectedDeck(null);
-        }
-      } catch (error) {
-        console.error('Error deleting deck:', error);
-      }
-    };
-
-    const handleAddCardToDeck = async (cardId: string) => {
-      if (!selectedDeck) return;
-
-      try {
-        await deckService.addCardToDeck(selectedDeck.id, cardId, 1);
-        // Refresh the selected deck
-        const updatedDeck = await deckService.getDeck(selectedDeck.id);
-        setSelectedDeck(updatedDeck);
-        
-        // Update deck count in list
-        setDecks(prev => prev.map(deck => 
-          deck.id === selectedDeck.id 
-            ? { ...deck, total_cards: (deck.total_cards || 0) + 1 }
-            : deck
-        ));
-      } catch (error) {
-        console.error('Error adding card to deck:', error);
-      }
-    };
-
-    const handleRemoveCardFromDeck = async (cardId: string) => {
-      if (!selectedDeck) return;
-
-      try {
-        await deckService.removeCardFromDeck(selectedDeck.id, cardId, 1);
-        // Refresh the selected deck
-        const updatedDeck = await deckService.getDeck(selectedDeck.id);
-        setSelectedDeck(updatedDeck);
-        
-        // Update deck count in list
-        setDecks(prev => prev.map(deck => 
-          deck.id === selectedDeck.id 
-            ? { ...deck, total_cards: Math.max(0, (deck.total_cards || 0) - 1) }
-            : deck
-        ));
-      } catch (error) {
-        console.error('Error removing card from deck:', error);
-      }
-    };
-
-    const getColorClass = (color: string) => {
-      switch (color) {
-        case 'Red': return 'bg-red-500';
-        case 'Blue': return 'bg-blue-500';
-        case 'Green': return 'bg-green-500';
-        case 'Purple': return 'bg-purple-500';
-        case 'Yellow': return 'bg-yellow-500';
-        case 'Black': return 'bg-gray-800';
-        default: return 'bg-gray-500';
-      }
-    };
-
-    const getRarityColor = (rarity: string) => {
-      switch (rarity) {
-        case 'C': return 'text-gray-400';
-        case 'UC': return 'text-green-400';
-        case 'R': return 'text-blue-400';
-        case 'SR': return 'text-purple-400';
-        case 'SEC': return 'text-red-400';
-        case 'L': return 'text-yellow-400';
-        case 'P': return 'text-pink-400';
-        default: return 'text-gray-400';
-      }
-    };
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case 'C': return 'text-gray-400';
+      case 'UC': return 'text-green-400';
+      case 'R': return 'text-blue-400';
+      case 'SR': return 'text-purple-400';
+      case 'SEC': return 'text-red-400';
+      case 'L': return 'text-yellow-400';
+      case 'P': return 'text-pink-400';
+      default: return 'text-gray-400';
+    }
+  };
 
   const filteredDecks = decks.filter(deck =>
     deck.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-
-
-    // Check if user is not authenticated
+  // Check if user is not authenticated
   if (!userProfile) {
     return (
       <div className="space-y-6">
@@ -290,70 +288,70 @@ export function DeckBuilder() {
 
   if (selectedDeck) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-          {/* Deck Editor Header - Fixed Top */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="sticky top-0 z-40 bg-black/20 backdrop-blur-sm border-b border-white/10 px-6 py-4"
-          >
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setSelectedDeck(null)}
-                  className="btn-secondary flex items-center space-x-2 hover:bg-white/20 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  <span>Back to Decks</span>
-                </button>
-                <div className="border-l border-white/20 pl-4">
-                  <h1 className="text-2xl font-bold gradient-text">{selectedDeck.name}</h1>
-                  <p className="text-white/70 text-sm">
-                    {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0} cards • {selectedDeck.format}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="text-sm text-white/60 bg-white/10 px-3 py-1 rounded-full">
-                  {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0}/60
-                </div>
-                <button
-                  onClick={() => setIsCardBrowser(!isCardBrowser)}
-                  className={`btn-primary flex items-center space-x-2 transition-all duration-200 ${
-                    isCardBrowser ? 'bg-blue-600 shadow-lg shadow-blue-500/25' : 'hover:bg-blue-600'
-                  }`}
-                >
-                  <Search className="h-4 w-4" />
-                  <span>{isCardBrowser ? 'Hide Browser' : 'Add Cards'}</span>
-                </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        {/* Deck Editor Header - Fixed Top */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-40 bg-black/20 backdrop-blur-sm border-b border-white/10 px-6 py-4"
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setSelectedDeck(null)}
+                className="btn-secondary flex items-center space-x-2 hover:bg-white/20 transition-colors"
+              >
+                <X className="h-4 w-4" />
+                <span>Back to Decks</span>
+              </button>
+              <div className="border-l border-white/20 pl-4">
+                <h1 className="text-2xl font-bold gradient-text">{selectedDeck.name}</h1>
+                <p className="text-white/70 text-sm">
+                  {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0} cards • {selectedDeck.format}
+                </p>
               </div>
             </div>
-          </motion.div>
-
-          {/* Main Content Area */}
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            <div className={`grid gap-6 transition-all duration-300 ${
-              isCardBrowser ? 'grid-cols-1 xl:grid-cols-3' : 'grid-cols-1 xl:grid-cols-2'
-            }`}>
-                        {/* Deck Contents - Left Column */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`card p-6 ${isCardBrowser ? 'xl:col-span-1' : 'xl:col-span-2'}`}
+            
+            <div className="flex items-center space-x-3">
+              <div className="text-sm text-white/60 bg-white/10 px-3 py-1 rounded-full">
+                {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0}/60
+              </div>
+              <button
+                onClick={() => setIsCardBrowser(!isCardBrowser)}
+                className={`btn-primary flex items-center space-x-2 transition-all duration-200 ${
+                  isCardBrowser ? 'bg-blue-600 shadow-lg shadow-blue-500/25' : 'hover:bg-blue-600'
+                }`}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
-                    <Layers className="h-5 w-5" />
-                    <span>Deck Contents</span>
-                  </h2>
-                  <div className="flex items-center space-x-2 text-sm text-white/60">
-                    <span>Total Cards:</span>
-                    <span className="font-semibold text-white">
-                      {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0}
-                    </span>
-                  </div>
-                </div>
+                <Search className="h-4 w-4" />
+                <span>{isCardBrowser ? 'Hide Browser' : 'Add Cards'}</span>
+              </button>
+            </div>
+          </div>
+      </motion.div>
+
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className={`grid gap-6 transition-all duration-300 ${
+          isCardBrowser ? 'grid-cols-1 xl:grid-cols-3' : 'grid-cols-1 xl:grid-cols-2'
+        }`}>
+          {/* Deck Contents - Left Column */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`card p-6 ${isCardBrowser ? 'xl:col-span-1' : 'xl:col-span-2'}`}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
+                <Layers className="h-5 w-5" />
+                <span>Deck Contents</span>
+              </h2>
+              <div className="flex items-center space-x-2 text-sm text-white/60">
+                <span>Total Cards:</span>
+                <span className="font-semibold text-white">
+                  {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0}
+                </span>
+              </div>
+            </div>
 
               {selectedDeck.leader_card && (
                 <div className="mb-6">
@@ -630,231 +628,232 @@ export function DeckBuilder() {
         </div>
       </div>
     );
+  }
 
-        return (
+  // Main DeckBuilder View (when no deck is selected)
+  return (
     <div className="space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center md:justify-between"
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center md:justify-between"
+      >
+        <div>
+          <h1 className="text-3xl font-bold gradient-text">Deck Builder</h1>
+          <p className="text-white/70 mt-2">Build competitive One Piece TCG decks with real cards</p>
+        </div>
+        
+        <motion.button
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          onClick={() => setIsCreating(true)}
+          className="btn-primary flex items-center space-x-2 mt-4 md:mt-0"
         >
-          <div>
-            <h1 className="text-3xl font-bold gradient-text">Deck Builder</h1>
-            <p className="text-white/70 mt-2">Build competitive One Piece TCG decks with real cards</p>
-          </div>
-          
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            onClick={() => setIsCreating(true)}
-            className="btn-primary flex items-center space-x-2 mt-4 md:mt-0"
+          <Plus className="h-4 w-4" />
+          <span>New Deck</span>
+        </motion.button>
+      </motion.div>
+
+      {/* Search */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="card p-6"
+      >
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+          <input
+            type="text"
+            placeholder="Search decks..."
+            className="input-field w-full pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </motion.div>
+
+      {/* Create New Deck Modal */}
+      <AnimatePresence>
+        {isCreating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => setIsCreating(false)}
           >
-            <Plus className="h-4 w-4" />
-            <span>New Deck</span>
-          </motion.button>
-        </motion.div>
-
-        {/* Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="card p-6"
-        >
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
-            <input
-              type="text"
-              placeholder="Search decks..."
-              className="input-field w-full pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </motion.div>
-
-        {/* Create New Deck Modal */}
-        <AnimatePresence>
-          {isCreating && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-              onClick={() => setIsCreating(false)}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="card p-6 w-full max-w-md mx-4"
+              onClick={(e) => e.stopPropagation()}
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="card p-6 w-full max-w-md mx-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h2 className="text-xl font-semibold text-white mb-4">Create New Deck</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">Create New Deck</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Deck Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter deck name"
+                    className="input-field w-full"
+                    value={newDeckName}
+                    onChange={(e) => setNewDeckName(e.target.value)}
+                  />
+                </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
-                      Deck Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Enter deck name"
-                      className="input-field w-full"
-                      value={newDeckName}
-                      onChange={(e) => setNewDeckName(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
-                      Format
-                    </label>
-                    <select
-                      className="input-field w-full"
-                      value={newDeckFormat}
-                      onChange={(e) => setNewDeckFormat(e.target.value as any)}
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Format
+                  </label>
+                  <select
+                    className="input-field w-full"
+                    value={newDeckFormat}
+                    onChange={(e) => setNewDeckFormat(e.target.value as any)}
+                  >
+                    <option value="Standard">Standard</option>
+                    <option value="Limited">Limited</option>
+                    <option value="Championship">Championship</option>
+                    <option value="Casual">Casual</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex space-x-4 mt-6">
+                <button
+                  onClick={() => setIsCreating(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateDeck}
+                  disabled={!newDeckName.trim()}
+                  className="btn-primary flex-1 disabled:opacity-50"
+                >
+                  Create Deck
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Decks Grid */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse card p-6">
+                <div className="h-6 bg-white/10 rounded mb-4"></div>
+                <div className="h-4 bg-white/10 rounded mb-2"></div>
+                <div className="h-4 bg-white/10 rounded mb-4"></div>
+                <div className="flex justify-between">
+                  <div className="h-4 bg-white/10 rounded w-1/3"></div>
+                  <div className="h-4 bg-white/10 rounded w-1/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredDecks.length === 0 ? (
+          <div className="text-center py-12">
+            <Layers className="h-16 w-16 text-white/40 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">
+              {searchTerm ? 'No decks found' : 'No decks yet'}
+            </h3>
+            <p className="text-white/60 mb-6">
+              {searchTerm 
+                ? 'Try adjusting your search terms'
+                : 'Create your first deck to get started building competitive strategies'
+              }
+            </p>
+            {!searchTerm && (
+              <button 
+                onClick={() => setIsCreating(true)}
+                className="btn-primary flex items-center space-x-2 mx-auto"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create Your First Deck</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDecks.map((deck, index) => (
+              <motion.div
+                key={deck.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="card p-6 hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => setSelectedDeck(deck)}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="font-semibold text-white text-lg line-clamp-2">
+                    {deck.name}
+                  </h3>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDeck(deck.id);
+                      }}
+                      className="text-red-400 hover:text-red-300 p-1"
                     >
-                      <option value="Standard">Standard</option>
-                      <option value="Limited">Limited</option>
-                      <option value="Championship">Championship</option>
-                      <option value="Casual">Casual</option>
-                    </select>
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex space-x-4 mt-6">
-                  <button
-                    onClick={() => setIsCreating(false)}
-                    className="btn-secondary flex-1"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreateDeck}
-                    disabled={!newDeckName.trim()}
-                    className="btn-primary flex-1 disabled:opacity-50"
-                  >
-                    Create Deck
-                  </button>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Format</span>
+                    <span className="text-white">{deck.format}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Cards</span>
+                    <span className="text-white">{deck.total_cards || 0}/60</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">Leader</span>
+                    <span className="text-white">
+                      {deck.leader_card?.name || 'Not selected'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                  <div className="text-sm text-white/60">
+                    {new Date(deck.updated_at).toLocaleDateString()}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDeck(deck);
+                      }}
+                      className="btn-secondary flex items-center space-x-1 px-3 py-1 text-sm"
+                    >
+                      <Eye className="h-3 w-3" />
+                      <span>Edit</span>
+                    </button>
+                  </div>
                 </div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Decks Grid */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse card p-6">
-                  <div className="h-6 bg-white/10 rounded mb-4"></div>
-                  <div className="h-4 bg-white/10 rounded mb-2"></div>
-                  <div className="h-4 bg-white/10 rounded mb-4"></div>
-                  <div className="flex justify-between">
-                    <div className="h-4 bg-white/10 rounded w-1/3"></div>
-                    <div className="h-4 bg-white/10 rounded w-1/4"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredDecks.length === 0 ? (
-            <div className="text-center py-12">
-              <Layers className="h-16 w-16 text-white/40 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {searchTerm ? 'No decks found' : 'No decks yet'}
-              </h3>
-              <p className="text-white/60 mb-6">
-                {searchTerm 
-                  ? 'Try adjusting your search terms'
-                  : 'Create your first deck to get started building competitive strategies'
-                }
-              </p>
-              {!searchTerm && (
-                <button 
-                  onClick={() => setIsCreating(true)}
-                  className="btn-primary flex items-center space-x-2 mx-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Create Your First Deck</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDecks.map((deck, index) => (
-                <motion.div
-                  key={deck.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="card p-6 hover:scale-105 transition-transform cursor-pointer"
-                  onClick={() => setSelectedDeck(deck)}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-semibold text-white text-lg line-clamp-2">
-                      {deck.name}
-                    </h3>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteDeck(deck.id);
-                        }}
-                        className="text-red-400 hover:text-red-300 p-1"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/60">Format</span>
-                      <span className="text-white">{deck.format}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/60">Cards</span>
-                      <span className="text-white">{deck.total_cards || 0}/60</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/60">Leader</span>
-                      <span className="text-white">
-                        {deck.leader_card?.name || 'Not selected'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                    <div className="text-sm text-white/60">
-                      {new Date(deck.updated_at).toLocaleDateString()}
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedDeck(deck);
-                        }}
-                        className="btn-secondary flex items-center space-x-1 px-3 py-1 text-sm"
-                      >
-                        <Eye className="h-3 w-3" />
-                        <span>Edit</span>
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      </div>
-    );
-  }
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
 }
