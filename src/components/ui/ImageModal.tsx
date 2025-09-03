@@ -27,7 +27,7 @@ export function ImageModal({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [triedFormats, setTriedFormats] = useState<string[]>([]);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.55);
   const [rotation, setRotation] = useState(0);
 
   // Carica l'immagine quando la modale si apre
