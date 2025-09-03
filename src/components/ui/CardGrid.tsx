@@ -86,18 +86,18 @@ export function CardGrid({
         {currentCards.map((card, index) => (
           <div
             key={`${card.cardNumber}-${index}`}
-            className="relative cursor-pointer group aspect-[2/3] flex items-center justify-center"
+            className="relative cursor-pointer group flex items-center justify-center p-1"
             onClick={() => openModal(card, index)}
           >
             <LazyCardImage
               cardNumber={card.cardNumber}
               cardName={card.name}
               size="md"
-              className="group-hover:ring-2 group-hover:ring-blue-400 transition-all duration-200 w-full h-full object-contain"
+              className="group-hover:ring-2 group-hover:ring-blue-400 transition-all duration-200"
             />
             
             {card.quantity && card.quantity > 1 && (
-              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-lg z-10">
+              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-lg z-10">
                 {card.quantity}
               </div>
             )}

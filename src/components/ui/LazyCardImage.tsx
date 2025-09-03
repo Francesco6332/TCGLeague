@@ -96,7 +96,7 @@ export function LazyCardImage({
   // Size classes - Mobile responsive (increased sizes)
   const sizeClasses = {
     sm: 'w-16 h-24 sm:w-20 sm:h-30', // 64x96px mobile, 80x120px desktop
-    md: 'w-full h-full', // Fill container for grid layout
+    md: 'w-20 h-30 sm:w-28 sm:h-42', // 80x120px mobile, 112x168px desktop
     lg: 'w-24 h-36 sm:w-36 sm:h-54', // 96x144px mobile, 144x216px desktop
     xl: 'w-28 h-42 sm:w-44 sm:h-66'  // 112x168px mobile, 176x264px desktop
   };
