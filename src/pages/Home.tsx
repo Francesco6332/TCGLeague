@@ -21,6 +21,7 @@ import type { League, News } from '../types';
 import { useGeolocation, calculateDistance } from '../hooks/useGeolocation';
 import { getNews, clearNewsCache } from '../services/newsService';
 import { getAppUpdates, clearAppUpdatesCache, getUpdateTypeColor, getUpdateTypeIcon, type AppUpdate } from '../services/appUpdatesService';
+import { StorageStatus } from '../components/ui/StorageStatus';
 
 interface LeagueWithDistance extends League {
   distance?: number | null;
@@ -402,6 +403,17 @@ export function Home() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Storage Status Section */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                <RefreshCw className="h-5 w-5 text-blue-400" />
+                <span>Storage Status</span>
+              </h3>
+            </div>
+            <StorageStatus />
           </div>
 
           {/* App Updates Section */}

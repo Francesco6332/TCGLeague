@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { GITHUB_IMAGE_URLS } from '../github-image-mapping';
+import { envConfig, STORAGE_PROVIDERS, type StorageProvider } from '../config/environment';
 
 /**
  * Service for managing One Piece TCG card images
- * Uses GitHub Releases for free image hosting
+ * Supports multiple storage providers: GitHub Releases, DigitalOcean Spaces, Cloudflare R2, AWS S3, etc.
  */
 export class ImageService {
   /**
@@ -17,24 +18,95 @@ export class ImageService {
     }
 
     try {
-      // Extract set code from card number (e.g., "OP01" from "OP01-001")
-      const setCode = cardNumber.split('-')[0];
-      
-      if (!setCode) {
-        return this.getPlaceholderUrl();
+      switch (envConfig.storageProvider) {
+        case STORAGE_PROVIDERS.DIGITALOCEAN_SPACES:
+          return this.getDigitalOceanSpacesImageUrl(cardNumber);
+        case STORAGE_PROVIDERS.CLOUDFLARE_R2:
+          return this.getCloudflareR2ImageUrl(cardNumber);
+        case STORAGE_PROVIDERS.AWS_S3:
+          return this.getAwsS3ImageUrl(cardNumber);
+        case STORAGE_PROVIDERS.AZURE_BLOB:
+          return this.getAzureBlobImageUrl(cardNumber);
+        case STORAGE_PROVIDERS.GITHUB:
+        default:
+          return this.getGitHubImageUrl(cardNumber);
       }
-
-      // Use GitHub Releases URLs
-      const imageUrl = GITHUB_IMAGE_URLS[`${setCode}-${cardNumber}` as keyof typeof GITHUB_IMAGE_URLS];
-      if (imageUrl) {
-        return imageUrl;
-      }
-      
-      return this.getPlaceholderUrl();
     } catch (error) {
       console.error('Error getting card image URL:', error);
       return this.getPlaceholderUrl();
     }
+  }
+
+  /**
+   * GitHub Releases implementation
+   */
+  private static getGitHubImageUrl(cardNumber: string): string {
+    // Extract set code from card number (e.g., "OP01" from "OP01-001")
+    const setCode = cardNumber.split('-')[0];
+    
+    if (!setCode) {
+      return this.getPlaceholderUrl();
+    }
+
+    // Use GitHub Releases URLs
+    const imageUrl = GITHUB_IMAGE_URLS[`${setCode}-${cardNumber}` as keyof typeof GITHUB_IMAGE_URLS];
+    if (imageUrl) {
+      return imageUrl;
+    }
+    
+    return this.getPlaceholderUrl();
+  }
+
+  /**
+   * DigitalOcean Spaces implementation
+   */
+  private static getDigitalOceanSpacesImageUrl(cardNumber: string): string {
+    const config = envConfig.digitalOceanSpaces;
+    if (!config.endpoint || !config.accessKeyId) {
+      console.warn('DigitalOcean Spaces not configured, falling back to GitHub');
+      return this.getGitHubImageUrl(cardNumber);
+    }
+    
+    return `${config.endpoint}/${cardNumber}.png`;
+  }
+
+  /**
+   * Cloudflare R2 implementation
+   */
+  private static getCloudflareR2ImageUrl(cardNumber: string): string {
+    const config = envConfig.cloudflareR2;
+    if (!config.endpoint || !config.accessKeyId) {
+      console.warn('Cloudflare R2 not configured, falling back to GitHub');
+      return this.getGitHubImageUrl(cardNumber);
+    }
+    
+    return `${config.endpoint}/${cardNumber}.png`;
+  }
+
+  /**
+   * AWS S3 implementation
+   */
+  private static getAwsS3ImageUrl(cardNumber: string): string {
+    const config = envConfig.awsS3;
+    if (!config.accessKeyId) {
+      console.warn('AWS S3 not configured, falling back to GitHub');
+      return this.getGitHubImageUrl(cardNumber);
+    }
+    
+    return `https://${config.bucket}.s3.${config.region}.amazonaws.com/${cardNumber}.png`;
+  }
+
+  /**
+   * Azure Blob implementation
+   */
+  private static getAzureBlobImageUrl(cardNumber: string): string {
+    const config = envConfig.azureBlob;
+    if (!config.account || !config.accessKey) {
+      console.warn('Azure Blob Storage not configured, falling back to GitHub');
+      return this.getGitHubImageUrl(cardNumber);
+    }
+    
+    return `https://${config.account}.blob.core.windows.net/${config.container}/${cardNumber}.png`;
   }
 
   /**
@@ -108,6 +180,76 @@ export class ImageService {
     }
 
     return [this.getPlaceholderUrl()];
+  }
+
+  /**
+   * Get current storage provider info
+   */
+  static getCurrentStorageProviderInfo() {
+    return {
+      provider: envConfig.storageProvider,
+      name: this.getStorageProviderName(envConfig.storageProvider),
+      isFree: this.isStorageProviderFree(envConfig.storageProvider),
+      storageLimit: this.getStorageProviderLimit(envConfig.storageProvider),
+      cost: this.getStorageProviderCost(envConfig.storageProvider),
+      configured: this.isStorageProviderConfigured(envConfig.storageProvider)
+    };
+  }
+
+  private static getStorageProviderName(provider: StorageProvider): string {
+    switch (provider) {
+      case STORAGE_PROVIDERS.DIGITALOCEAN_SPACES: return 'DigitalOcean Spaces';
+      case STORAGE_PROVIDERS.CLOUDFLARE_R2: return 'Cloudflare R2';
+      case STORAGE_PROVIDERS.AWS_S3: return 'AWS S3';
+      case STORAGE_PROVIDERS.AZURE_BLOB: return 'Azure Blob Storage';
+      case STORAGE_PROVIDERS.GITHUB: return 'GitHub Releases';
+      default: return 'GitHub Releases';
+    }
+  }
+
+  private static isStorageProviderFree(provider: StorageProvider): boolean {
+    return provider === STORAGE_PROVIDERS.GITHUB || 
+           provider === STORAGE_PROVIDERS.CLOUDFLARE_R2 || 
+           provider === STORAGE_PROVIDERS.AWS_S3 || 
+           provider === STORAGE_PROVIDERS.AZURE_BLOB;
+  }
+
+  private static getStorageProviderLimit(provider: StorageProvider): string {
+    switch (provider) {
+      case STORAGE_PROVIDERS.DIGITALOCEAN_SPACES: return '250GB';
+      case STORAGE_PROVIDERS.CLOUDFLARE_R2: return '10GB';
+      case STORAGE_PROVIDERS.AWS_S3: return '5GB';
+      case STORAGE_PROVIDERS.AZURE_BLOB: return '5GB';
+      case STORAGE_PROVIDERS.GITHUB: return 'Unlimited';
+      default: return 'Unlimited';
+    }
+  }
+
+  private static getStorageProviderCost(provider: StorageProvider): string {
+    switch (provider) {
+      case STORAGE_PROVIDERS.DIGITALOCEAN_SPACES: return '$5/month for 250GB + 1TB transfer';
+      case STORAGE_PROVIDERS.CLOUDFLARE_R2: return 'Free tier: 10GB + 1M operations/month';
+      case STORAGE_PROVIDERS.AWS_S3: return 'Free tier: 5GB + 20K requests/month for 12 months';
+      case STORAGE_PROVIDERS.AZURE_BLOB: return 'Free tier: 5GB + 20K operations/month';
+      case STORAGE_PROVIDERS.GITHUB: return 'Free for public repositories';
+      default: return 'Free for public repositories';
+    }
+  }
+
+  private static isStorageProviderConfigured(provider: StorageProvider): boolean {
+    switch (provider) {
+      case STORAGE_PROVIDERS.DIGITALOCEAN_SPACES:
+        return !!(envConfig.digitalOceanSpaces.endpoint && envConfig.digitalOceanSpaces.accessKeyId);
+      case STORAGE_PROVIDERS.CLOUDFLARE_R2:
+        return !!(envConfig.cloudflareR2.endpoint && envConfig.cloudflareR2.accessKeyId);
+      case STORAGE_PROVIDERS.AWS_S3:
+        return !!(envConfig.awsS3.accessKeyId && envConfig.awsS3.secretAccessKey);
+      case STORAGE_PROVIDERS.AZURE_BLOB:
+        return !!(envConfig.azureBlob.account && envConfig.azureBlob.accessKey);
+      case STORAGE_PROVIDERS.GITHUB:
+      default:
+        return true; // GitHub doesn't need configuration
+    }
   }
 }
 

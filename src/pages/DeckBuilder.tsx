@@ -96,6 +96,13 @@ export function DeckBuilder() {
   const fetchCards = async () => {
     try {
       setCardLoading(true);
+      console.log('Fetching cards with filters:', {
+        set: selectedSet,
+        color: selectedColor,
+        type: selectedType,
+        rarity: selectedRarity
+      });
+      
       const fetchedCards = await cardService.getCards({
         set: selectedSet || undefined,
         color: selectedColor || undefined,
@@ -103,6 +110,10 @@ export function DeckBuilder() {
         rarity: selectedRarity || undefined,
         limit: 500 // Show more cards from GitHub releases
       });
+      
+      console.log('Fetched cards:', fetchedCards.length);
+      console.log('Sample fetched cards:', fetchedCards.slice(0, 3));
+      
       setCards(fetchedCards);
       setHasMoreCards(fetchedCards.length === 500);
       setCurrentPage(1);
