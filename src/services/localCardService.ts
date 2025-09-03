@@ -1,5 +1,4 @@
 // Local card service for managing cards and decks without external database
-import { GITHUB_IMAGE_URLS } from '../github-image-mapping';
 import { OP01_CARDS } from '../data/op01-cards';
 
 interface Card {
@@ -54,21 +53,14 @@ const realCardData: Record<string, Partial<Card>> = {
 function generateCardsFromGitHub(): Card[] {
   const cards: Card[] = [];
   
-  // Parse card numbers from GitHub image mapping
-  Object.keys(GITHUB_IMAGE_URLS).forEach(key => {
-    // Extract set code and card number from key (e.g., "OP01-OP01-001" -> "OP01", "OP01-001")
-    const parts = key.split('-');
-    if (parts.length >= 3) {
-      const setCode = parts[0];
-      const cardNumber = `${parts[1]}-${parts[2]}`;
-      
-      // Generate card data based on set and number patterns
-      const card = generateCardData(setCode, cardNumber);
-      if (card) {
-        cards.push(card);
-      }
+  // Generate cards for OP01 set (since we're not using GitHub mapping anymore)
+  for (let i = 1; i <= 120; i++) {
+    const cardNumber = `OP01-${i.toString().padStart(3, '0')}`;
+    const card = generateCardData('OP01', cardNumber);
+    if (card) {
+      cards.push(card);
     }
-  });
+  }
   
   return cards;
 }

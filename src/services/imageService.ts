@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { GITHUB_IMAGE_URLS } from '../github-image-mapping';
 import { envConfig, STORAGE_PROVIDERS, type StorageProvider } from '../config/environment';
 
 /**
@@ -38,22 +37,10 @@ export class ImageService {
   }
 
   /**
-   * GitHub Releases implementation
+   * GitHub Releases implementation (fallback)
    */
-  private static getGitHubImageUrl(cardNumber: string): string {
-    // Extract set code from card number (e.g., "OP01" from "OP01-001")
-    const setCode = cardNumber.split('-')[0];
-    
-    if (!setCode) {
-      return this.getPlaceholderUrl();
-    }
-
-    // Use GitHub Releases URLs
-    const imageUrl = GITHUB_IMAGE_URLS[`${setCode}-${cardNumber}` as keyof typeof GITHUB_IMAGE_URLS];
-    if (imageUrl) {
-      return imageUrl;
-    }
-    
+  private static getGitHubImageUrl(_cardNumber: string): string {
+    // Since we're not using GitHub anymore, return placeholder
     return this.getPlaceholderUrl();
   }
 
@@ -193,18 +180,7 @@ export class ImageService {
   static getFallbackUrls(cardNumber: string): string[] {
     if (!cardNumber) return [this.getPlaceholderUrl()];
 
-    const setCode = cardNumber.split('-')[0];
-    if (!setCode) return [this.getPlaceholderUrl()];
-
-    const imageUrl = GITHUB_IMAGE_URLS[`${setCode}-${cardNumber}` as keyof typeof GITHUB_IMAGE_URLS];
-    
-    if (imageUrl) {
-      return [
-        imageUrl,
-        this.getPlaceholderUrl()
-      ];
-    }
-
+    // Since we're not using GitHub anymore, return placeholder
     return [this.getPlaceholderUrl()];
   }
 

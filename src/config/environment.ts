@@ -63,7 +63,7 @@ export interface EnvironmentConfig {
 
 // Default configuration
 const defaultConfig: EnvironmentConfig = {
-  storageProvider: STORAGE_PROVIDERS.GITHUB,
+  storageProvider: STORAGE_PROVIDERS.DIGITALOCEAN_SPACES,
   
   digitalOceanSpaces: {
     endpoint: '',
