@@ -22,10 +22,13 @@ export function CardImage({
   const [triedFormats, setTriedFormats] = useState<string[]>([]);
 
   const handleError = () => {
+    console.log('Image failed to load:', imageUrl);
+    
     if (!hasError && showPlaceholder) {
       // Try alternative format if we haven't tried it yet
       if (!triedFormats.includes('jpg') && imageUrl.endsWith('.png')) {
         const jpgUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'jpg');
+        console.log('Trying JPG format:', jpgUrl);
         setImageUrl(jpgUrl);
         setTriedFormats(prev => [...prev, 'jpg']);
         return;
@@ -33,12 +36,14 @@ export function CardImage({
       
       if (!triedFormats.includes('png') && imageUrl.endsWith('.jpg')) {
         const pngUrl = ImageService.getCardImageUrlWithFormat(cardNumber, 'png');
+        console.log('Trying PNG format:', pngUrl);
         setImageUrl(pngUrl);
         setTriedFormats(prev => [...prev, 'png']);
         return;
       }
       
       // If both formats failed, show placeholder
+      console.log('All formats failed, showing placeholder');
       setHasError(true);
       setImageUrl(ImageService.getPlaceholderUrl());
     }

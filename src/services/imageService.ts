@@ -62,12 +62,26 @@ export class ImageService {
    */
   private static getDigitalOceanSpacesImageUrl(cardNumber: string): string {
     const config = envConfig.digitalOceanSpaces;
+    console.log('DigitalOcean Spaces config:', {
+      endpoint: config.endpoint,
+      bucket: config.bucket,
+      region: config.region,
+      hasAccessKey: !!config.accessKeyId,
+      hasSecretKey: !!config.secretAccessKey
+    });
+    
     if (!config.endpoint || !config.accessKeyId) {
       console.warn('DigitalOcean Spaces not configured, falling back to GitHub');
       return this.getGitHubImageUrl(cardNumber);
     }
     
-    return `${config.endpoint}/${cardNumber}.png`;
+    // Extract set code from card number (e.g., "OP01" from "OP01-001")
+    const setCode = cardNumber.split('-')[0];
+    
+    // Generate path with folder structure: OP01/OP01-001.png
+    const imageUrl = `${config.endpoint}/${setCode}/${cardNumber}.png`;
+    console.log('Generated DigitalOcean URL:', imageUrl);
+    return imageUrl;
   }
 
   /**
@@ -80,7 +94,11 @@ export class ImageService {
       return this.getGitHubImageUrl(cardNumber);
     }
     
-    return `${config.endpoint}/${cardNumber}.png`;
+    // Extract set code from card number (e.g., "OP01" from "OP01-001")
+    const setCode = cardNumber.split('-')[0];
+    
+    // Generate path with folder structure: OP01/OP01-001.png
+    return `${config.endpoint}/${setCode}/${cardNumber}.png`;
   }
 
   /**
@@ -93,7 +111,11 @@ export class ImageService {
       return this.getGitHubImageUrl(cardNumber);
     }
     
-    return `https://${config.bucket}.s3.${config.region}.amazonaws.com/${cardNumber}.png`;
+    // Extract set code from card number (e.g., "OP01" from "OP01-001")
+    const setCode = cardNumber.split('-')[0];
+    
+    // Generate path with folder structure: OP01/OP01-001.png
+    return `https://${config.bucket}.s3.${config.region}.amazonaws.com/${setCode}/${cardNumber}.png`;
   }
 
   /**
@@ -106,7 +128,11 @@ export class ImageService {
       return this.getGitHubImageUrl(cardNumber);
     }
     
-    return `https://${config.account}.blob.core.windows.net/${config.container}/${cardNumber}.png`;
+    // Extract set code from card number (e.g., "OP01" from "OP01-001")
+    const setCode = cardNumber.split('-')[0];
+    
+    // Generate path with folder structure: OP01/OP01-001.png
+    return `https://${config.account}.blob.core.windows.net/${config.container}/${setCode}/${cardNumber}.png`;
   }
 
   /**
