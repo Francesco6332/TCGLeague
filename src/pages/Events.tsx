@@ -12,8 +12,6 @@ import {
   Plus,
   Filter,
   Search,
-  Eye,
-  Edit,
   Navigation,
   AlertCircle
 } from 'lucide-react';
@@ -102,7 +100,7 @@ export function Events() {
         // Filter for player's events if needed
         if (viewMode === 'my' && userProfile.userType === 'player') {
           fetchedEvents = fetchedEvents.filter(event => 
-            event.participants.some(p => p.id === userProfile.id)
+            event.participants.some(p => p.playerId === userProfile.id)
           );
         }
 
@@ -487,6 +485,10 @@ export function Events() {
         <CreateEventModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
+          onEventCreated={(event) => {
+            setEvents(prev => [event, ...prev]);
+            setShowCreateModal(false);
+          }}
         />
       </div>
     </div>

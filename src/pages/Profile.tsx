@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   User, 
-  Store, 
+  Store as StoreIcon, 
   Mail, 
   Phone, 
   Globe, 
@@ -15,12 +15,11 @@ import {
   Trophy,
   Calendar,
   Users,
-  Star,
   Settings,
   Shield,
   CreditCard
 } from 'lucide-react';
-import type { Store as StoreType } from '../types';
+import type { Store } from '../types';
 
 export function Profile() {
   const { userProfile, updateProfile, logout } = useAuth();
@@ -57,18 +56,19 @@ export function Profile() {
         bandaiMembershipId: userProfile.bandaiMembershipId || '',
       });
       
-      if (userProfile.userType === 'store' && userProfile.store) {
+      if (userProfile.userType === 'store') {
+        const storeProfile = userProfile as Store;
         setStoreFormData({
-          storeName: userProfile.store.storeName || '',
-          phone: userProfile.store.phone || '',
-          website: userProfile.store.website || '',
-          description: userProfile.store.description || '',
+          storeName: storeProfile.storeName || '',
+          phone: storeProfile.phone || '',
+          website: storeProfile.website || '',
+          description: storeProfile.description || '',
           address: {
-            street: userProfile.store.address?.street || '',
-            city: userProfile.store.address?.city || '',
-            state: userProfile.store.address?.state || '',
-            zipCode: userProfile.store.address?.zipCode || '',
-            country: userProfile.store.address?.country || '',
+            street: storeProfile.address?.street || '',
+            city: storeProfile.address?.city || '',
+            state: storeProfile.address?.state || '',
+            zipCode: storeProfile.address?.zipCode || '',
+            country: storeProfile.address?.country || '',
           },
         });
       }
@@ -114,10 +114,14 @@ export function Profile() {
       };
       
       if (userProfile.userType === 'store') {
-        updateData.store = storeFormData;
+        const storeUpdateData = {
+          ...updateData,
+          ...storeFormData,
+        };
+        await updateProfile(storeUpdateData);
+      } else {
+        await updateProfile(updateData);
       }
-      
-      await updateProfile(updateData);
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
       
@@ -140,18 +144,19 @@ export function Profile() {
         bandaiMembershipId: userProfile.bandaiMembershipId || '',
       });
       
-      if (userProfile.userType === 'store' && userProfile.store) {
+      if (userProfile.userType === 'store') {
+        const storeProfile = userProfile as Store;
         setStoreFormData({
-          storeName: userProfile.store.storeName || '',
-          phone: userProfile.store.phone || '',
-          website: userProfile.store.website || '',
-          description: userProfile.store.description || '',
+          storeName: storeProfile.storeName || '',
+          phone: storeProfile.phone || '',
+          website: storeProfile.website || '',
+          description: storeProfile.description || '',
           address: {
-            street: userProfile.store.address?.street || '',
-            city: userProfile.store.address?.city || '',
-            state: userProfile.store.address?.state || '',
-            zipCode: userProfile.store.address?.zipCode || '',
-            country: userProfile.store.address?.country || '',
+            street: storeProfile.address?.street || '',
+            city: storeProfile.address?.city || '',
+            state: storeProfile.address?.state || '',
+            zipCode: storeProfile.address?.zipCode || '',
+            country: storeProfile.address?.country || '',
           },
         });
       }
@@ -339,7 +344,7 @@ export function Profile() {
                   </label>
                   <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
                     {userProfile.userType === 'store' ? (
-                      <Store className="h-4 w-4 text-purple-400" />
+                                              <StoreIcon className="h-4 w-4 text-purple-400" />
                     ) : (
                       <User className="h-4 w-4 text-blue-400" />
                     )}
@@ -358,7 +363,7 @@ export function Profile() {
                 className="card p-4 sm:p-6" // Responsive padding
               >
                 <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4"> {/* Responsive spacing and margin */}
-                  <Store className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" /> {/* Responsive icon size */}
+                                          <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" /> {/* Responsive icon size */}
                   <h2 className="text-lg sm:text-xl font-semibold text-white">Store Information</h2> {/* Responsive font size */}
                 </div>
                 
@@ -378,7 +383,7 @@ export function Profile() {
                       />
                     ) : (
                       <div className="text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
-                        {userProfile.store?.storeName || 'Not set'}
+                        {userProfile.userType === 'store' ? (userProfile as Store).storeName || 'Not set' : 'Not set'}
                       </div>
                     )}
                   </div>
@@ -400,7 +405,7 @@ export function Profile() {
                       ) : (
                         <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
                           <Phone className="h-4 w-4 text-white/60" />
-                          <span>{userProfile.store?.phone || 'Not set'}</span>
+                          <span>{userProfile.userType === 'store' ? (userProfile as Store).phone || 'Not set' : 'Not set'}</span>
                         </div>
                       )}
                     </div>
@@ -421,7 +426,7 @@ export function Profile() {
                       ) : (
                         <div className="flex items-center space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
                           <Globe className="h-4 w-4 text-white/60" />
-                          <span>{userProfile.store?.website || 'Not set'}</span>
+                          <span>{userProfile.userType === 'store' ? (userProfile as Store).website || 'Not set' : 'Not set'}</span>
                         </div>
                       )}
                     </div>
@@ -442,7 +447,7 @@ export function Profile() {
                       />
                     ) : (
                       <div className="text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
-                        {userProfile.store?.description || 'No description'}
+                        {userProfile.userType === 'store' ? (userProfile as Store).description || 'No description' : 'No description'}
                       </div>
                     )}
                   </div>
@@ -503,11 +508,11 @@ export function Profile() {
                         <div className="flex items-start space-x-2 text-white text-sm sm:text-base py-2 px-3 bg-white/5 rounded-lg"> {/* Responsive font size and padding */}
                           <MapPin className="h-4 w-4 text-white/60 mt-0.5 flex-shrink-0" />
                           <div>
-                            {userProfile.store?.address ? (
+                            {userProfile.userType === 'store' && (userProfile as Store).address ? (
                               <div>
-                                <div>{userProfile.store.address.street}</div>
-                                <div>{userProfile.store.address.city}, {userProfile.store.address.state} {userProfile.store.address.zipCode}</div>
-                                <div>{userProfile.store.address.country}</div>
+                                <div>{(userProfile as Store).address.street}</div>
+                                <div>{(userProfile as Store).address.city}, {(userProfile as Store).address.state} {(userProfile as Store).address.zipCode}</div>
+                                <div>{(userProfile as Store).address.country}</div>
                               </div>
                             ) : (
                               <span>Address not set</span>

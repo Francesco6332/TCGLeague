@@ -6,7 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import type { User, UserType, Player, Store } from '../types';
 
@@ -22,6 +22,7 @@ interface AuthContextType {
     bandaiMembershipId?: string,
     storeInfo?: Partial<Store>
   ) => Promise<void>;
+  updateProfile: (updateData: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -162,11 +163,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
+  const updateProfile = async (updateData: Partial<User>) => {
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        ...updateData,
+        updatedAt: new Date(),
+      });
+
+      // Update local state
+      setUserProfile(prev => prev ? { ...prev, ...updateData, updatedAt: new Date() } : null);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
     login,
     register,
+    updateProfile,
     logout,
     loading,
   };

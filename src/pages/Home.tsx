@@ -358,7 +358,7 @@ export function Home() {
                       className="group cursor-pointer"
                     >
                       <a 
-                        href={item.url} 
+                        href={item.sourceUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="block border-l-2 border-purple-400 pl-3 hover:border-purple-300 transition-colors"
@@ -369,7 +369,7 @@ export function Home() {
                               {item.title}
                             </h4>
                             <p className="text-xs text-white/50 mb-2 line-clamp-2">
-                              {item.description}
+                              {item.excerpt}
                             </p>
                           </div>
                           <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-purple-400 ml-2 flex-shrink-0 mt-0.5" />

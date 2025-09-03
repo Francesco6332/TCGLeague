@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Trophy, UserPlus, Store as StoreIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Store } from '../../types';
+
 
 export function Register() {
   const [formData, setFormData] = useState({
@@ -99,8 +99,8 @@ export function Register() {
         formData.email,
         formData.password,
         formData.username,
-        formData.bandaiMembershipId,
         formData.userType,
+        formData.bandaiMembershipId,
         formData.userType === 'store' ? storeInfo : undefined
       );
       
