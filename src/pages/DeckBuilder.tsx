@@ -21,31 +21,31 @@ interface DeckWithCardCount extends Deck {
 
 export function DeckBuilder() {
   const { userProfile } = useAuth();
-    const [decks, setDecks] = useState<DeckWithCardCount[]>([]);
-    const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
-    const [cards, setCards] = useState<Card[]>([]);
-    const [filteredCards, setFilteredCards] = useState<Card[]>([]);
-    const [isCreating, setIsCreating] = useState(false);
-    const [isCardBrowser, setIsCardBrowser] = useState(false);
-    const [isGridView, setIsGridView] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [cardSearchTerm, setCardSearchTerm] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [cardLoading, setCardLoading] = useState(false);
-    const [hasMoreCards, setHasMoreCards] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
+  const [decks, setDecks] = useState<DeckWithCardCount[]>([]);
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [filteredCards, setFilteredCards] = useState<Card[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isCardBrowser, setIsCardBrowser] = useState(false);
+  const [isGridView, setIsGridView] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [cardSearchTerm, setCardSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [cardLoading, setCardLoading] = useState(false);
+  const [hasMoreCards, setHasMoreCards] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
     
-    // Card filters
-    const [selectedSet, setSelectedSet] = useState<string>('');
-    const [selectedColor, setSelectedColor] = useState<string>('');
-    const [selectedType, setSelectedType] = useState<string>('');
-    const [selectedRarity, setSelectedRarity] = useState<string>('');
+  // Card filters
+  const [selectedSet, setSelectedSet] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedRarity, setSelectedRarity] = useState<string>('');
 
-    // New deck form
-    const [newDeckName, setNewDeckName] = useState('');
-    const [newDeckFormat, setNewDeckFormat] = useState<'Standard' | 'Limited' | 'Championship' | 'Casual'>('Standard');
+  // New deck form
+  const [newDeckName, setNewDeckName] = useState('');
+  const [newDeckFormat, setNewDeckFormat] = useState<'Standard' | 'Limited' | 'Championship' | 'Casual'>('Standard');
 
-    const sets = [
+  const sets = [
       // Main sets
       'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10', 'OP11', 'OP12', 'OP13',
       // Starter decks
@@ -61,21 +61,21 @@ export function DeckBuilder() {
     const types = ['Leader', 'Character', 'Event', 'Stage', 'DON!!'];
     const rarities = ['C', 'UC', 'R', 'SR', 'SEC', 'L', 'P'];
 
-    useEffect(() => {
-      fetchDecks();
-    }, [userProfile]);
+  useEffect(() => {
+    fetchDecks();
+  }, [userProfile]);
 
-    useEffect(() => {
-      if (isCardBrowser) {
-        fetchCards();
-      }
-    }, [isCardBrowser, selectedSet, selectedColor, selectedType, selectedRarity]);
+  useEffect(() => {
+    if (isCardBrowser) {
+      fetchCards();
+    }
+  }, [isCardBrowser, selectedSet, selectedColor, selectedType, selectedRarity]);
 
-    useEffect(() => {
-      filterCards();
-    }, [cards, cardSearchTerm]);
+  useEffect(() => {
+    filterCards();
+  }, [cards, cardSearchTerm]);
 
-    const fetchDecks = async () => {
+  const fetchDecks = async () => {
       if (!userProfile) return;
 
       try {
@@ -265,7 +265,7 @@ export function DeckBuilder() {
       }
     };
 
-      const filteredDecks = decks.filter(deck =>
+  const filteredDecks = decks.filter(deck =>
     deck.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -631,9 +631,7 @@ export function DeckBuilder() {
       </div>
     );
 
-      console.log('Rendering main DeckBuilder view');
-  
-  return (
+        return (
     <div className="space-y-6">
         {/* Header */}
         <motion.div
