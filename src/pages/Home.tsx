@@ -389,16 +389,6 @@ export function Home() {
               )}
             </div>
 
-            {/* Storage Status Section - Mobile responsive */}
-            <div className="card p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-semibold text-white flex items-center space-x-2">
-                  <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
-                  <span>Storage Status</span>
-                </h3>
-              </div>
-            </div>
-
             {/* App Updates Section - Mobile responsive */}
             <div className="card p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
