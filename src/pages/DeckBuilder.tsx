@@ -416,58 +416,63 @@ export function DeckBuilder() {
                 </div>
               )}
 
-              <div className="space-y-2 sm:space-y-3 max-h-64 sm:max-h-96 overflow-y-auto">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h4 className="text-sm sm:text-md font-medium text-white flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span>Main Deck</span>
-                  </h4>
-                  <span className="text-xs text-white/60 bg-blue-400/20 px-2 py-1 rounded-full">
-                    {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0} cards
-                  </span>
-                </div>
-                
-                {selectedDeck.deck_cards?.map((deckCard) => (
-                  <div key={deckCard.id} className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 hover:bg-white/10 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                        <LazyCardImage
-                          cardNumber={deckCard.card?.card_number || ''}
-                          cardName={deckCard.card?.name || 'Unknown Card'}
-                          size="md"
-                          className="flex-shrink-0"
-                        />
-                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${getColorClass(deckCard.card?.color || 'Colorless')}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-white text-sm truncate">{deckCard.card?.name}</div>
-                          <div className="text-xs text-white/60">
-                            {deckCard.card?.card_number} • {deckCard.card?.cost !== null ? `${deckCard.card?.cost} Cost` : 'No Cost'}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1 sm:space-x-2 ml-2">
-                        <span className="text-white font-medium bg-blue-500/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">
-                          ×{deckCard.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveCardFromDeck(deckCard.card_id)}
-                          className="text-red-400 hover:text-red-300 p-1 hover:bg-red-400/10 rounded transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {(!selectedDeck.deck_cards || selectedDeck.deck_cards.length === 0) && (
-                  <div className="text-center py-6 sm:py-8 text-white/60">
-                    <CreditCard className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-40" />
-                    <p className="text-sm sm:text-base">No cards in deck</p>
-                    <p className="text-xs sm:text-sm">Use the card browser to add cards</p>
-                  </div>
-                )}
-              </div>
+                             <div className="space-y-4">
+                 <div className="flex items-center justify-between mb-3 sm:mb-4">
+                   <h4 className="text-sm sm:text-md font-medium text-white flex items-center space-x-2">
+                     <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                     <span>Main Deck</span>
+                   </h4>
+                   <span className="text-xs text-white/60 bg-blue-400/20 px-2 py-1 rounded-full">
+                     {selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0}/51 cards
+                   </span>
+                 </div>
+                 
+                 {selectedDeck.deck_cards && selectedDeck.deck_cards.length > 0 ? (
+                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+                     {selectedDeck.deck_cards?.map((deckCard) => (
+                       <div key={deckCard.id} className="relative group">
+                         <div className="relative">
+                           <LazyCardImage
+                             cardNumber={deckCard.card?.card_number || ''}
+                             cardName={deckCard.card?.name || 'Unknown Card'}
+                             size="md"
+                             className="w-full h-auto rounded-lg shadow-md group-hover:shadow-lg transition-shadow"
+                           />
+                           
+                           {/* Quantity Counter */}
+                           <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                             {deckCard.quantity}
+                           </div>
+                         </div>
+                         
+                         {/* Card Controls */}
+                         <div className="flex items-center justify-center space-x-1 mt-2">
+                           <button
+                             onClick={() => handleRemoveCardFromDeck(deckCard.card_id)}
+                             className="bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
+                             disabled={deckCard.quantity <= 1}
+                           >
+                             -
+                           </button>
+                           <button
+                             onClick={() => handleAddCardToDeck(deckCard.card_id)}
+                             className="bg-green-500 hover:bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
+                             disabled={(selectedDeck.deck_cards?.reduce((sum, card) => sum + card.quantity, 0) || 0) >= 51}
+                           >
+                             +
+                           </button>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 ) : (
+                   <div className="text-center py-6 sm:py-8 text-white/60">
+                     <CreditCard className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-40" />
+                     <p className="text-sm sm:text-base">No cards in deck</p>
+                     <p className="text-xs sm:text-sm">Use the card browser to add cards</p>
+                   </div>
+                 )}
+               </div>
             </motion.div>
 
                          {/* Card Browser - Bottom Row */}
@@ -648,8 +653,8 @@ export function DeckBuilder() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Card List */}
-                  <div className="space-y-2 max-h-64 sm:max-h-96 overflow-y-auto">
+                                     {/* Card List */}
+                   <div className="space-y-2">
                     {cardLoading ? (
                       <div className="text-center py-6 sm:py-8">
                         <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-400 mx-auto mb-3 sm:mb-4"></div>
