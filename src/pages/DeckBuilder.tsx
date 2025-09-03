@@ -50,6 +50,9 @@ export function DeckBuilder() {
   // New deck form
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState<'Standard' | 'Limited' | 'Championship' | 'Casual'>('Standard');
+  
+  // Notification state
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const sets = [
     // Main sets
@@ -221,8 +224,23 @@ export function DeckBuilder() {
           ? { ...deck, total_cards: (deck.total_cards || 0) + 1 }
           : deck
       ));
+      
+      // Show success notification
+      const card = cards.find(c => c.id === cardId);
+      setNotification({ 
+        message: `${card?.name || 'Card'} added to deck!`, 
+        type: 'success' 
+      });
+      
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error('Error adding card to deck:', error);
+      setNotification({ 
+        message: 'Failed to add card to deck', 
+        type: 'error' 
+      });
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -341,16 +359,16 @@ export function DeckBuilder() {
         </motion.div>
 
         {/* Main Content Area */}
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
-          <div className={`grid gap-4 sm:gap-6 transition-all duration-300 ${
-            isCardBrowser ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
-          }`}>
-            {/* Deck Contents - Left Column */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`card p-4 sm:p-6 ${isCardBrowser ? 'lg:col-span-1' : 'lg:col-span-2'}`}
-            >
+                 <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
+           <div className={`grid gap-4 sm:gap-6 transition-all duration-300 ${
+             isCardBrowser ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
+           }`}>
+             {/* Deck Contents - Top Row */}
+             <motion.div
+               initial={{ opacity: 0, x: -20 }}
+               animate={{ opacity: 1, x: 0 }}
+               className={`card p-4 sm:p-6 ${isCardBrowser ? 'lg:col-span-3' : 'lg:col-span-2'}`}
+             >
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center space-x-2">
                   <Layers className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -452,15 +470,15 @@ export function DeckBuilder() {
               </div>
             </motion.div>
 
-            {/* Card Browser - Right Column */}
-            <AnimatePresence>
-              {isCardBrowser && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="card p-4 sm:p-6 lg:col-span-2"
-                >
+                         {/* Card Browser - Bottom Row */}
+             <AnimatePresence>
+               {isCardBrowser && (
+                 <motion.div
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: 20 }}
+                   className="card p-4 sm:p-6 lg:col-span-3"
+                 >
                   <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center space-x-2">
                     <Search className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Card Browser</span>
@@ -483,6 +501,24 @@ export function DeckBuilder() {
                   <p className="text-xs sm:text-sm text-white/60 mb-3 sm:mb-4">
                     Card data sourced from <a href="https://onepiece.limitlesstcg.com/cards" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Limitless TCG Database</a>
                   </p>
+
+                  {/* Notification */}
+                  <AnimatePresence>
+                    {notification && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={`mb-4 p-3 rounded-lg text-sm font-medium ${
+                          notification.type === 'success' 
+                            ? 'bg-green-500/20 border border-green-500/30 text-green-300' 
+                            : 'bg-red-500/20 border border-red-500/30 text-red-300'
+                        }`}
+                      >
+                        {notification.message}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Mobile Search and Filters */}
                   <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">

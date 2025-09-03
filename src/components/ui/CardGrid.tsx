@@ -22,7 +22,7 @@ export function CardGrid({
   cards,
   onCardClick,
   className = '',
-  itemsPerPage = 4,
+  itemsPerPage = 8,
   showPagination = true,
   enableModal = true
 }: CardGridProps) {
@@ -81,8 +81,8 @@ export function CardGrid({
 
   return (
     <div className={`${className} overflow-hidden`}>
-      {/* Griglia carte - Auto-fit responsive grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 overflow-hidden">
+      {/* Griglia carte - Fixed 4 columns */}
+      <div className="grid grid-cols-4 gap-3 sm:gap-4 md:gap-5 overflow-hidden">
         {currentCards.map((card, index) => (
           <div
             key={`${card.cardNumber}-${index}`}
