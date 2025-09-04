@@ -91,7 +91,7 @@ export function CardGrid({
           >
             <LazyCardImage
               cardNumber={card.cardNumber}
-              cardName={card.name}
+              cardName=""
               size="md"
               className="group-hover:ring-2 group-hover:ring-blue-400 transition-all duration-200"
             />
@@ -214,7 +214,7 @@ export function CardGrid({
           isOpen={!!modalCard}
           onClose={closeModal}
           cardNumber={modalCard.cardNumber}
-          cardName={modalCard.name}
+          cardName=""
           onPrevious={modalIndex > 0 ? goToPrevious : undefined}
           onNext={modalIndex < cards.length - 1 ? goToNext : undefined}
           hasPrevious={modalIndex > 0}

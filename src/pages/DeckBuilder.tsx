@@ -228,7 +228,7 @@ export function DeckBuilder() {
       // Show success notification
       const card = cards.find(c => c.id === cardId);
       setNotification({ 
-        message: `${card?.name || 'Card'} added to deck!`, 
+        message: `${card?.card_number || 'Card'} added to deck!`, 
         type: 'success' 
       });
       
@@ -397,14 +397,14 @@ export function DeckBuilder() {
                     <div className="flex items-center space-x-3 sm:space-x-4">
                       <LazyCardImage
                         cardNumber={selectedDeck.leader_card.card_number}
-                        cardName={selectedDeck.leader_card.name}
+                        cardName=""
                         size="md"
                         className="flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1 sm:mb-2">
                           <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${getColorClass(selectedDeck.leader_card.color)}`} />
-                          <div className="font-semibold text-white text-sm sm:text-lg truncate">{selectedDeck.leader_card.name}</div>
+                          <div className="font-semibold text-white text-sm sm:text-lg truncate">{selectedDeck.leader_card.card_number}</div>
                         </div>
                         <div className="text-xs sm:text-sm text-white/70 space-y-1">
                           <div>{selectedDeck.leader_card.card_number} • {selectedDeck.leader_card.type}</div>
@@ -434,7 +434,7 @@ export function DeckBuilder() {
                          <div className="relative">
                            <LazyCardImage
                              cardNumber={deckCard.card?.card_number || ''}
-                             cardName={deckCard.card?.name || 'Unknown Card'}
+                             cardName=""
                              size="md"
                              className="w-full h-auto rounded-lg shadow-md group-hover:shadow-lg transition-shadow"
                            />
